@@ -91,6 +91,28 @@ exports.getClientSetting = async (req, res) => {
   }
 };
 
+exports.getClientSettingByKey = async (req, res) => {
+  try {
+    const { settingKey } = req.params;
+    const { clientId } = req.query;
+    const organizationId = req.organizationId;
+
+    if (!clientId) {
+      return res.status(400).json({ error: 'clientId query parameter is required' });
+    }
+
+    const setting = await ClientSetting.findOne({ organizationId, clientId, settingKey });
+    if (!setting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+
+    res.json({ value: setting.settingValue, setting });
+  } catch (error) {
+    logger.error('Error getting client setting by key:', error);
+    res.status(500).json({ error: 'Failed to get setting' });
+  }
+};
+
 exports.getUserSetting = async (req, res) => {
   try {
     const { userId, settingKey } = req.params;
@@ -108,6 +130,28 @@ exports.getUserSetting = async (req, res) => {
   }
 };
 
+exports.getUserSettingByKey = async (req, res) => {
+  try {
+    const { settingKey } = req.params;
+    const { userId } = req.query;
+    const organizationId = req.organizationId;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId query parameter is required' });
+    }
+
+    const setting = await UserSetting.findOne({ organizationId, userId, settingKey });
+    if (!setting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+
+    res.json({ value: setting.settingValue, setting });
+  } catch (error) {
+    logger.error('Error getting user setting by key:', error);
+    res.status(500).json({ error: 'Failed to get setting' });
+  }
+};
+
 exports.getDynamicSetting = async (req, res) => {
   try {
     const { uniqueId, settingKey } = req.params;
@@ -121,6 +165,28 @@ exports.getDynamicSetting = async (req, res) => {
     res.json({ value: setting.settingValue, setting });
   } catch (error) {
     logger.error('Error getting dynamic setting:', error);
+    res.status(500).json({ error: 'Failed to get setting' });
+  }
+};
+
+exports.getDynamicSettingByKey = async (req, res) => {
+  try {
+    const { settingKey } = req.params;
+    const { uniqueId } = req.query;
+    const organizationId = req.organizationId;
+
+    if (!uniqueId) {
+      return res.status(400).json({ error: 'uniqueId query parameter is required' });
+    }
+
+    const setting = await DynamicSetting.findOne({ organizationId, uniqueId, settingKey });
+    if (!setting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+
+    res.json({ value: setting.settingValue, setting });
+  } catch (error) {
+    logger.error('Error getting dynamic setting by key:', error);
     res.status(500).json({ error: 'Failed to get setting' });
   }
 };
@@ -522,5 +588,47 @@ exports.deleteDynamicSetting = async (req, res) => {
   } catch (error) {
     logger.error('Error deleting dynamic setting:', error);
     res.status(500).json({ error: 'Failed to delete setting' });
+  }
+};
+
+// Get all settings for a specific clientId
+exports.getAllClientSettings = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const organizationId = req.organizationId;
+
+    const settings = await ClientSetting.find({ organizationId, clientId }).sort({ createdAt: -1 });
+    res.json(settings);
+  } catch (error) {
+    logger.error('Error getting all client settings:', error);
+    res.status(500).json({ error: 'Failed to get client settings' });
+  }
+};
+
+// Get all settings for a specific userId
+exports.getAllUserSettings = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const organizationId = req.organizationId;
+
+    const settings = await UserSetting.find({ organizationId, userId }).sort({ createdAt: -1 });
+    res.json(settings);
+  } catch (error) {
+    logger.error('Error getting all user settings:', error);
+    res.status(500).json({ error: 'Failed to get user settings' });
+  }
+};
+
+// Get all settings for a specific uniqueId
+exports.getAllDynamicSettings = async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    const organizationId = req.organizationId;
+
+    const settings = await DynamicSetting.find({ organizationId, uniqueId }).sort({ createdAt: -1 });
+    res.json(settings);
+  } catch (error) {
+    logger.error('Error getting all dynamic settings:', error);
+    res.status(500).json({ error: 'Failed to get dynamic settings' });
   }
 };

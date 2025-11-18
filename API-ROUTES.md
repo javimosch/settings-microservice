@@ -38,9 +38,15 @@ Cookie: connect.sid=s%3A...
 # Cascade Resolution (original endpoints)
 GET  /api/global-settings/:settingKey
 POST /api/global-settings
+GET  /api/client-settings/all/:clientId              # Get all settings for clientId
 GET  /api/client-settings/:clientId/:settingKey
+GET  /api/client-settings/:settingKey?clientId=xxx   # Alternative: get by key
+GET  /api/user-settings/all/:userId                  # Get all settings for userId
 GET  /api/user-settings/:userId/:settingKey
+GET  /api/user-settings/:settingKey?userId=xxx       # Alternative: get by key
+GET  /api/dynamic-settings/all/:uniqueId             # Get all settings for uniqueId
 GET  /api/dynamic-settings/:uniqueId/:settingKey
+GET  /api/dynamic-settings/:settingKey?uniqueId=xxx  # Alternative: get by key
 
 # Full CRUD Operations
 GET    /api/settings/global          - List all global settings

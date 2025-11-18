@@ -9,14 +9,20 @@ router.use(dynamicAuthMiddleware);
 router.get('/global-settings/:settingKey', apiController.getSetting);
 router.post('/global-settings', apiController.createOrUpdateGlobalSetting);
 
-// Client Settings
+// Client Settings  
+router.get('/client-settings/all/:clientId', apiController.getAllClientSettings);
 router.get('/client-settings/:clientId/:settingKey', apiController.getClientSetting);
+router.get('/client-settings/:settingKey', apiController.getClientSettingByKey);
 
 // User Settings
+router.get('/user-settings/all/:userId', apiController.getAllUserSettings);
 router.get('/user-settings/:userId/:settingKey', apiController.getUserSetting);
+router.get('/user-settings/:settingKey', apiController.getUserSettingByKey);
 
 // Dynamic Settings
+router.get('/dynamic-settings/all/:uniqueId', apiController.getAllDynamicSettings);
 router.get('/dynamic-settings/:uniqueId/:settingKey', apiController.getDynamicSetting);
+router.get('/dynamic-settings/:settingKey', apiController.getDynamicSettingByKey);
 
 // ========== FULL CRUD OPERATIONS ==========
 
