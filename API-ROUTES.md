@@ -44,21 +44,25 @@ GET  /api/dynamic-settings/:uniqueId/:settingKey
 
 # Full CRUD Operations
 GET    /api/settings/global          - List all global settings
+GET    /api/settings/global/:id      - Get single global setting by ID
 POST   /api/settings/global          - Create global setting
 PUT    /api/settings/global/:id      - Update global setting
 DELETE /api/settings/global/:id      - Delete global setting
 
 GET    /api/settings/client          - List client settings
+GET    /api/settings/client/:id      - Get single client setting by ID
 POST   /api/settings/client          - Create client setting
 PUT    /api/settings/client/:id      - Update client setting
 DELETE /api/settings/client/:id      - Delete client setting
 
 GET    /api/settings/user            - List user settings
+GET    /api/settings/user/:id        - Get single user setting by ID
 POST   /api/settings/user            - Create user setting
 PUT    /api/settings/user/:id        - Update user setting
 DELETE /api/settings/user/:id        - Delete user setting
 
 GET    /api/settings/dynamic         - List dynamic settings
+GET    /api/settings/dynamic/:id     - Get single dynamic setting by ID
 POST   /api/settings/dynamic         - Create dynamic setting
 PUT    /api/settings/dynamic/:id     - Update dynamic setting
 DELETE /api/settings/dynamic/:id     - Delete dynamic setting
@@ -135,6 +139,25 @@ Content-Type: application/json
 
 **Permissions Required**: `globalSettings.write`
 
+#### Get Global Setting by ID
+```http
+GET /api/settings/global/507f1f77bcf86cd799439011
+```
+
+**Response**:
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "organizationId": "507f191e810c19729de860ea",
+  "settingKey": "max_users",
+  "settingValue": 100,
+  "description": "Maximum users allowed",
+  "createdBy": "api-user",
+  "createdAt": "2025-11-18T19:00:00.000Z",
+  "updatedAt": "2025-11-18T19:00:00.000Z"
+}
+```
+
 #### Update Global Setting
 ```http
 PUT /api/settings/global/507f1f77bcf86cd799439011
@@ -185,6 +208,26 @@ Content-Type: application/json
 
 **Permissions Required**: `clientSettings.write`
 
+#### Get Client Setting by ID
+```http
+GET /api/settings/client/507f1f77bcf86cd799439011
+```
+
+**Response**:
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "organizationId": "507f191e810c19729de860ea",
+  "clientId": "client-123",
+  "settingKey": "max_users",
+  "settingValue": 50,
+  "description": "Client override",
+  "createdBy": "api-user",
+  "createdAt": "2025-11-18T19:00:00.000Z",
+  "updatedAt": "2025-11-18T19:00:00.000Z"
+}
+```
+
 #### Update Client Setting
 ```http
 PUT /api/settings/client/507f1f77bcf86cd799439011
@@ -223,6 +266,26 @@ Content-Type: application/json
 
 **Permissions Required**: `userSettings.write`
 
+#### Get User Setting by ID
+```http
+GET /api/settings/user/507f1f77bcf86cd799439011
+```
+
+**Response**:
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "organizationId": "507f191e810c19729de860ea",
+  "userId": "user-456",
+  "settingKey": "theme",
+  "settingValue": "dark",
+  "description": "User preference",
+  "createdBy": "api-user",
+  "createdAt": "2025-11-18T19:00:00.000Z",
+  "updatedAt": "2025-11-18T19:00:00.000Z"
+}
+```
+
 #### Update User Setting
 ```http
 PUT /api/settings/user/507f1f77bcf86cd799439011
@@ -255,6 +318,36 @@ Content-Type: application/json
 ```
 
 **Permissions Required**: `dynamicSettings.write`
+
+#### Get Dynamic Setting by ID
+```http
+GET /api/settings/dynamic/507f1f77bcf86cd799439011
+```
+
+**Response**:
+```json
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "organizationId": "507f191e810c19729de860ea",
+  "uniqueId": "session-abc",
+  "settingKey": "timeout",
+  "settingValue": 3600,
+  "description": "Session timeout",
+  "createdBy": "api-user",
+  "createdAt": "2025-11-18T19:00:00.000Z",
+  "updatedAt": "2025-11-18T19:00:00.000Z"
+}
+```
+
+#### Update Dynamic Setting
+```http
+PUT /api/settings/dynamic/507f1f77bcf86cd799439011
+```
+
+#### Delete Dynamic Setting
+```http
+DELETE /api/settings/dynamic/507f1f77bcf86cd799439011
+```
 
 ---
 
