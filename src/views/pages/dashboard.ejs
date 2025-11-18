@@ -1,3 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Settings Microservice' %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <a href="/dashboard" class="text-xl font-bold text-gray-800">Settings Microservice</a>
+        </div>
+        <div class="flex items-center space-x-4">
+          <% if (typeof user !== 'undefined' && user) { %>
+            <span class="text-gray-600">Welcome, <%= user %></span>
+            <a href="/logout" class="text-red-600 hover:text-red-800">Logout</a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto py-6 px-4">
+    
 <div x-data="dashboardData()">
   <div class="mb-6">
     <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -162,3 +190,38 @@ function dashboardData() {
   };
 }
 </script>
+
+  </div>
+
+  <script>
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 px-6 py-3 rounded shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white z-50`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    async function fetchAPI(url, options = {}) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Request failed');
+        }
+        return data;
+      } catch (error) {
+        showNotification(error.message, 'error');
+        throw error;
+      }
+    }
+  </script>
+</body>
+</html>
+
