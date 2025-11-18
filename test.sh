@@ -5,7 +5,9 @@
 
 set -e
 
-BASE_URL="http://localhost:3000"
+source .env
+
+BASE_URL="http://localhost:${PORT:-3000}"
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
@@ -19,7 +21,7 @@ if curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/" | grep -q "200\|302"; t
   echo -e "${GREEN}PASS${NC}"
 else
   echo -e "${RED}FAIL${NC}"
-  echo "Server is not responding. Make sure it's running on port 3000"
+  echo "Server is not responding. Make sure it's running on port ${PORT:-3000}"
   exit 1
 fi
 
