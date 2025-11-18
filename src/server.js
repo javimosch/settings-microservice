@@ -18,15 +18,7 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://unpkg.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"]
-    }
-  }
-}));
+// Remove helmet or use with relaxed CSP
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
