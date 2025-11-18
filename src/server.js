@@ -3,7 +3,6 @@ const express = require("express");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const bodyParser = require("body-parser");
-const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const path = require("path");
@@ -18,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
-// Remove helmet or use with relaxed CSP
+// Helmet removed to avoid CSP issues with Alpine.js/Vue and CDN resources
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
