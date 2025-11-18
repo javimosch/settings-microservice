@@ -80,22 +80,33 @@
     <div class="bg-white rounded-lg shadow p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Settings</h2>
-        <div class="space-x-2">
-          <a href="/settings/global" class="text-blue-600 hover:text-blue-900">Global</a>
-          <a href="/settings/client" class="text-blue-600 hover:text-blue-900">Client</a>
-          <a href="/settings/user" class="text-blue-600 hover:text-blue-900">User</a>
-          <a href="/settings/dynamic" class="text-blue-600 hover:text-blue-900">Dynamic</a>
-        </div>
+        <a href="/settings" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Manage →
+        </a>
       </div>
       <p class="text-gray-600">Manage three-tier settings and dynamic settings</p>
+      <ul class="mt-4 space-y-2 text-sm text-gray-600">
+        <li>• Global - Organization-wide defaults</li>
+        <li>• Client - Client-specific overrides</li>
+        <li>• User - User-specific preferences</li>
+        <li>• Dynamic - Custom unique ID based</li>
+      </ul>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Dynamic Auth</h2>
-        <a href="/dynamicauth" class="text-blue-600 hover:text-blue-900">Manage</a>
+        <a href="/dynamicauth" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Manage →
+        </a>
       </div>
       <p class="text-gray-600">Configure authentication middlewares for external APIs</p>
+      <ul class="mt-4 space-y-2 text-sm text-gray-600">
+        <li>• HTTP - Call external auth services</li>
+        <li>• JavaScript - Custom validation logic</li>
+        <li>• Caching - Configurable TTL</li>
+        <li>• Testing - Built-in test interface</li>
+      </ul>
     </div>
   </div>
 

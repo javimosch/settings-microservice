@@ -88,6 +88,26 @@ app.get('/dashboard', (req, res) => {
   });
 });
 
+app.get('/settings', (req, res) => {
+  if (!req.session.authenticated) {
+    return res.redirect('/login');
+  }
+  res.render('pages/settings/index', { 
+    title: 'Settings Management',
+    user: req.session.username
+  });
+});
+
+app.get('/dynamicauth', (req, res) => {
+  if (!req.session.authenticated) {
+    return res.redirect('/login');
+  }
+  res.render('pages/auth/dynamicauth', { 
+    title: 'Dynamic Auth Management',
+    user: req.session.username
+  });
+});
+
 app.use('/api/internal', internalRoutes);
 app.use('/api', apiRoutes);
 

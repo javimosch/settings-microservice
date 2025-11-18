@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center space-x-4">
+          <a href="/dashboard" class="text-xl font-bold text-gray-800">Settings Microservice</a>
+          <span class="text-gray-400">/</span>
+          <span class="text-gray-600">Settings</span>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-gray-600">Welcome, <%= user %></span>
+          <a href="/logout" class="text-red-600 hover:text-red-800">Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto py-6 px-4" id="app">
+    <div>
+      <!-- Organization Selector -->
+      <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Organization:</label>
+        <select 
+          v-model="selectedOrgId"
+          @change="loadAllSettings()"
+          class="w-full md:w-96 border border-gray-300 rounded px-3 py-2"
+        >
+          <option value="">-- Select Organization --</option>
+          <option v-for="org in organizations" :key="org._id" :value="org._id">{{ org.name }}</option>
+        </select>
+      </div>
+
+      <div v-if="selectedOrgId">
+        <!-- Tabs -->
+        <div class="bg-white rounded-t-lg shadow">
+          <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+              <button
+                @click="activeTab = 'global'"
+                :class="[activeTab === 'global' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']"
+              >
+                Global Settings
+              </button>
+              <button
+                @click="activeTab = 'client'"
+                :class="[activeTab === 'client' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']"
+              >
+                Client Settings
+              </button>
+              <button
+                @click="activeTab = 'user'"
+                :class="[activeTab === 'user' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']"
+              >
+                User Settings
+              </button>
+              <button
+                @click="activeTab = 'dynamic'"
+                :class="[activeTab === 'dynamic' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']"
+              >
+                Dynamic Settings
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="bg-white rounded-b-lg shadow p-6">
+          
+          <!-- Global Settings Tab -->
+          <div v-show="activeTab === 'global'">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold">Global Settings</h2>
+              <button @click="openForm('global')" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                + Add Setting
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Key</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Updated</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="setting in globalSettings" :key="setting._id">
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">{{ setting.settingKey }}</td>
+                    <td class="px-6 py-4">{{ formatValue(setting.settingValue) }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ setting.description || '-' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ new Date(setting.updatedAt).toLocaleString() }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <button @click="editSetting('global', setting)" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                      <button @click="deleteSetting('global', setting._id)" class="text-red-600 hover:text-red-900">Delete</button>
+                    </td>
+                  </tr>
+                  <tr v-if="globalSettings.length === 0">
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No global settings yet</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Client Settings Tab -->
+          <div v-show="activeTab === 'client'">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold">Client Settings</h2>
+              <button @click="openForm('client')" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                + Add Setting
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Key</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="setting in clientSettings" :key="setting._id">
+                    <td class="px-6 py-4 whitespace-nowrap font-medium text-blue-600">{{ setting.clientId }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ setting.settingKey }}</td>
+                    <td class="px-6 py-4">{{ formatValue(setting.settingValue) }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ setting.description || '-' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <button @click="editSetting('client', setting)" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                      <button @click="deleteSetting('client', setting._id)" class="text-red-600 hover:text-red-900">Delete</button>
+                    </td>
+                  </tr>
+                  <tr v-if="clientSettings.length === 0">
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No client settings yet</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- User Settings Tab -->
+          <div v-show="activeTab === 'user'">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold">User Settings</h2>
+              <button @click="openForm('user')" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                + Add Setting
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Key</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="setting in userSettings" :key="setting._id">
+                    <td class="px-6 py-4 whitespace-nowrap font-medium text-green-600">{{ setting.userId }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ setting.settingKey }}</td>
+                    <td class="px-6 py-4">{{ formatValue(setting.settingValue) }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ setting.description || '-' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <button @click="editSetting('user', setting)" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                      <button @click="deleteSetting('user', setting._id)" class="text-red-600 hover:text-red-900">Delete</button>
+                    </td>
+                  </tr>
+                  <tr v-if="userSettings.length === 0">
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No user settings yet</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Dynamic Settings Tab -->
+          <div v-show="activeTab === 'dynamic'">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold">Dynamic Settings</h2>
+              <button @click="openForm('dynamic')" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                + Add Setting
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unique ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Key</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="setting in dynamicSettings" :key="setting._id">
+                    <td class="px-6 py-4 whitespace-nowrap font-medium text-purple-600">{{ setting.uniqueId }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ setting.settingKey }}</td>
+                    <td class="px-6 py-4">{{ formatValue(setting.settingValue) }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ setting.description || '-' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <button @click="editSetting('dynamic', setting)" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                      <button @click="deleteSetting('dynamic', setting._id)" class="text-red-600 hover:text-red-900">Delete</button>
+                    </td>
+                  </tr>
+                  <tr v-if="dynamicSettings.length === 0">
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No dynamic settings yet</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Settings Form Modal -->
+      <div v-show="showForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
+          <h3 class="text-xl font-bold mb-4">{{ editingId ? 'Edit' : 'Add' }} {{ activeTab.charAt(0).toUpperCase() + activeTab.slice(1) }} Setting</h3>
+          <form @submit.prevent="saveSetting()">
+            
+            <!-- Client ID field (only for client settings) -->
+            <div v-if="activeTab === 'client'" class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">Client ID *</label>
+              <input 
+                v-model="form.clientId"
+                type="text" 
+                required
+                placeholder="e.g., client-123"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+              />
+            </div>
+
+            <!-- User ID field (only for user settings) -->
+            <div v-if="activeTab === 'user'" class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">User ID *</label>
+              <input 
+                v-model="form.userId"
+                type="text" 
+                required
+                placeholder="e.g., user-456"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+              />
+            </div>
+
+            <!-- Unique ID field (only for dynamic settings) -->
+            <div v-if="activeTab === 'dynamic'" class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">Unique ID *</label>
+              <input 
+                v-model="form.uniqueId"
+                type="text" 
+                required
+                placeholder="e.g., feature-flag-1"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+              />
+            </div>
+
+            <!-- Setting Key -->
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">Setting Key *</label>
+              <input 
+                v-model="form.settingKey"
+                type="text" 
+                required
+                placeholder="e.g., max_users, theme, feature_enabled"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+              />
+            </div>
+
+            <!-- Setting Value -->
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">Setting Value *</label>
+              <div class="flex gap-2 mb-2">
+                <button type="button" @click="valueType = 'string'" :class="['px-3 py-1 rounded text-sm', valueType === 'string' ? 'bg-blue-500 text-white' : 'bg-gray-200']">String</button>
+                <button type="button" @click="valueType = 'number'" :class="['px-3 py-1 rounded text-sm', valueType === 'number' ? 'bg-blue-500 text-white' : 'bg-gray-200']">Number</button>
+                <button type="button" @click="valueType = 'boolean'" :class="['px-3 py-1 rounded text-sm', valueType === 'boolean' ? 'bg-blue-500 text-white' : 'bg-gray-200']">Boolean</button>
+                <button type="button" @click="valueType = 'json'" :class="['px-3 py-1 rounded text-sm', valueType === 'json' ? 'bg-blue-500 text-white' : 'bg-gray-200']">JSON</button>
+              </div>
+              
+              <input v-if="valueType === 'string'" v-model="form.settingValue" type="text" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" />
+              <input v-else-if="valueType === 'number'" v-model.number="form.settingValue" type="number" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" />
+              <select v-else-if="valueType === 'boolean'" v-model="form.settingValue" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700">
+                <option :value="true">true</option>
+                <option :value="false">false</option>
+              </select>
+              <textarea v-else-if="valueType === 'json'" v-model="form.settingValue" rows="4" required placeholder='{"key": "value"}' class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"></textarea>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+              <textarea 
+                v-model="form.description"
+                rows="3"
+                placeholder="Optional description of what this setting does"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+              ></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+              <button 
+                type="button"
+                @click="closeForm()"
+                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit"
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          organizations: [],
+          selectedOrgId: '',
+          activeTab: 'global',
+          globalSettings: [],
+          clientSettings: [],
+          userSettings: [],
+          dynamicSettings: [],
+          showForm: false,
+          editingId: null,
+          valueType: 'string',
+          form: {
+            settingKey: '',
+            settingValue: '',
+            description: '',
+            clientId: '',
+            userId: '',
+            uniqueId: ''
+          }
+        };
+      },
+      mounted() {
+        this.loadOrganizations();
+      },
+      methods: {
+        async loadOrganizations() {
+          const data = await fetchAPI('/api/internal/organizations');
+          this.organizations = data;
+        },
+
+        async loadAllSettings() {
+          if (!this.selectedOrgId) return;
+          await Promise.all([
+            this.loadGlobalSettings(),
+            this.loadClientSettings(),
+            this.loadUserSettings(),
+            this.loadDynamicSettings()
+          ]);
+        },
+
+        async loadGlobalSettings() {
+          const data = await fetchAPI(`/api/internal/global-settings?organizationId=${this.selectedOrgId}`);
+          this.globalSettings = data;
+        },
+
+        async loadClientSettings() {
+          const data = await fetchAPI(`/api/internal/client-settings?organizationId=${this.selectedOrgId}`);
+          this.clientSettings = data;
+        },
+
+        async loadUserSettings() {
+          const data = await fetchAPI(`/api/internal/user-settings?organizationId=${this.selectedOrgId}`);
+          this.userSettings = data;
+        },
+
+        async loadDynamicSettings() {
+          const data = await fetchAPI(`/api/internal/dynamic-settings?organizationId=${this.selectedOrgId}`);
+          this.dynamicSettings = data;
+        },
+
+        openForm(type) {
+          this.activeTab = type;
+          this.editingId = null;
+          this.resetForm();
+          this.showForm = true;
+        },
+
+        editSetting(type, setting) {
+          this.activeTab = type;
+          this.editingId = setting._id;
+          this.form = {
+            settingKey: setting.settingKey,
+            settingValue: setting.settingValue,
+            description: setting.description || '',
+            clientId: setting.clientId || '',
+            userId: setting.userId || '',
+            uniqueId: setting.uniqueId || ''
+          };
+          this.detectValueType();
+          this.showForm = true;
+        },
+
+        detectValueType() {
+          const val = this.form.settingValue;
+          if (typeof val === 'boolean') this.valueType = 'boolean';
+          else if (typeof val === 'number') this.valueType = 'number';
+          else if (typeof val === 'object') {
+            this.valueType = 'json';
+            this.form.settingValue = JSON.stringify(val, null, 2);
+          }
+          else this.valueType = 'string';
+        },
+
+        async saveSetting() {
+          const endpoint = `${this.activeTab}-settings`;
+          let payload = {
+            organizationId: this.selectedOrgId,
+            settingKey: this.form.settingKey,
+            settingValue: this.valueType === 'json' ? JSON.parse(this.form.settingValue) : this.form.settingValue,
+            description: this.form.description
+          };
+
+          if (this.activeTab === 'client') payload.clientId = this.form.clientId;
+          if (this.activeTab === 'user') payload.userId = this.form.userId;
+          if (this.activeTab === 'dynamic') payload.uniqueId = this.form.uniqueId;
+
+          const url = this.editingId 
+            ? `/api/internal/${endpoint}/${this.editingId}`
+            : `/api/internal/${endpoint}`;
+          const method = this.editingId ? 'PUT' : 'POST';
+
+          await fetchAPI(url, { method, body: JSON.stringify(payload) });
+          
+          this.closeForm();
+          await this.loadAllSettings();
+          showNotification('Setting saved successfully');
+        },
+
+        async deleteSetting(type, id) {
+          if (!confirm('Are you sure you want to delete this setting?')) return;
+          const endpoint = `${type}-settings`;
+          await fetchAPI(`/api/internal/${endpoint}/${id}`, { method: 'DELETE' });
+          await this.loadAllSettings();
+          showNotification('Setting deleted successfully');
+        },
+
+        closeForm() {
+          this.showForm = false;
+          this.editingId = null;
+          this.resetForm();
+        },
+
+        resetForm() {
+          this.form = {
+            settingKey: '',
+            settingValue: '',
+            description: '',
+            clientId: '',
+            userId: '',
+            uniqueId: ''
+          };
+          this.valueType = 'string';
+        },
+
+        formatValue(value) {
+          if (typeof value === 'object') return JSON.stringify(value);
+          if (typeof value === 'boolean') return value ? 'true' : 'false';
+          return String(value);
+        }
+      }
+    }).mount('#app');
+
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 px-6 py-3 rounded shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white z-50`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    async function fetchAPI(url, options = {}) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Request failed');
+        }
+        return data;
+      } catch (error) {
+        showNotification(error.message, 'error');
+        throw error;
+      }
+    }
+  </script>
+</body>
+</html>
