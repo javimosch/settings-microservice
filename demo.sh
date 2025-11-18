@@ -3,11 +3,18 @@
 echo "=== Settings Microservice Demo Script ==="
 echo ""
 
-source .env
-
-BASE_URL="http://localhost:${PORT}"
+BASE_URL="http://localhost:3000"
 ORG_ID=""
 AUTH_ID=""
+
+# Check if jq is available
+if command -v jq &> /dev/null; then
+  HAS_JQ=true
+else
+  HAS_JQ=false
+  echo "Note: 'jq' not found. Using basic JSON parsing (install jq for better output)"
+  echo ""
+fi
 
 echo "Step 1: Login to get session cookie"
 SESSION_COOKIE=$(curl -s -c - -X POST "${BASE_URL}/login" \
@@ -15,24 +22,30 @@ SESSION_COOKIE=$(curl -s -c - -X POST "${BASE_URL}/login" \
   -d "username=admin&password=admin123" | grep connect.sid | awk '{print $7}')
 
 if [ -z "$SESSION_COOKIE" ]; then
-  echo "❌ Login failed. Make sure the server is running on port ${PORT}"
+  echo "❌ Login failed. Make sure the server is running on port 3000"
   exit 1
 fi
 echo "✅ Login successful"
 echo ""
 
 echo "Step 2: Create an organization"
+TIMESTAMP=$(date +%s)
 ORG_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/internal/organizations" \
   -H "Content-Type: application/json" \
   -H "Cookie: connect.sid=${SESSION_COOKIE}" \
-  -d '{"name": "Demo Organization"}')
+  -d "{\"name\": \"Demo Org ${TIMESTAMP}\"}")
 
-ORG_ID=$(echo $ORG_RESPONSE | grep -o '"_id":"[^"]*"' | cut -d'"' -f4)
+if [ "$HAS_JQ" = true ]; then
+  ORG_ID=$(echo "$ORG_RESPONSE" | jq -r '._id')
+else
+  ORG_ID=$(echo "$ORG_RESPONSE" | grep -o '"_id":"[^"]*"' | head -1 | cut -d'"' -f4)
+fi
+
 echo "✅ Organization created: ${ORG_ID}"
 echo ""
 
 echo "Step 3: Create Global Settings"
-curl -s -X POST "${BASE_URL}/api/internal/global-settings" \
+GLOBAL_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/internal/global-settings" \
   -H "Content-Type: application/json" \
   -H "Cookie: connect.sid=${SESSION_COOKIE}" \
   -d "{
@@ -40,11 +53,17 @@ curl -s -X POST "${BASE_URL}/api/internal/global-settings" \
     \"settingKey\": \"max_users\",
     \"settingValue\": 100,
     \"description\": \"Maximum number of users allowed\"
-  }" | jq .
+  }")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$GLOBAL_RESPONSE" | jq .
+else
+  echo "$GLOBAL_RESPONSE"
+fi
 echo ""
 
 echo "Step 4: Create Client Settings"
-curl -s -X POST "${BASE_URL}/api/internal/client-settings" \
+CLIENT_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/internal/client-settings" \
   -H "Content-Type: application/json" \
   -H "Cookie: connect.sid=${SESSION_COOKIE}" \
   -d "{
@@ -53,11 +72,17 @@ curl -s -X POST "${BASE_URL}/api/internal/client-settings" \
     \"settingKey\": \"max_users\",
     \"settingValue\": 50,
     \"description\": \"Client specific max users override\"
-  }" | jq .
+  }")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$CLIENT_RESPONSE" | jq .
+else
+  echo "$CLIENT_RESPONSE"
+fi
 echo ""
 
 echo "Step 5: Create User Settings"
-curl -s -X POST "${BASE_URL}/api/internal/user-settings" \
+USER_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/internal/user-settings" \
   -H "Content-Type: application/json" \
   -H "Cookie: connect.sid=${SESSION_COOKIE}" \
   -d "{
@@ -66,7 +91,13 @@ curl -s -X POST "${BASE_URL}/api/internal/user-settings" \
     \"settingKey\": \"max_users\",
     \"settingValue\": 10,
     \"description\": \"User specific max users override\"
-  }" | jq .
+  }")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$USER_RESPONSE" | jq .
+else
+  echo "$USER_RESPONSE"
+fi
 echo ""
 
 echo "Step 6: Create DynamicAuth (JS type)"
@@ -83,46 +114,79 @@ AUTH_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/internal/dynamicauth" \
     \"description\": \"Demo authentication for testing\"
   }")
 
-AUTH_ID=$(echo $AUTH_RESPONSE | grep -o '"_id":"[^"]*"' | cut -d'"' -f4)
+if [ "$HAS_JQ" = true ]; then
+  AUTH_ID=$(echo "$AUTH_RESPONSE" | jq -r '._id')
+else
+  AUTH_ID=$(echo "$AUTH_RESPONSE" | grep -o '"_id":"[^"]*"' | head -1 | cut -d'"' -f4)
+fi
+
 echo "✅ DynamicAuth created: ${AUTH_ID}"
-echo "$AUTH_RESPONSE" | jq .
+if [ "$HAS_JQ" = true ]; then
+  echo "$AUTH_RESPONSE" | jq .
+else
+  echo "$AUTH_RESPONSE"
+fi
 echo ""
 
 echo "Step 7: Test DynamicAuth"
-curl -s -X POST "${BASE_URL}/api/internal/dynamicauth/${AUTH_ID}/try" \
+TEST_AUTH=$(curl -s -X POST "${BASE_URL}/api/internal/dynamicauth/${AUTH_ID}/try" \
   -H "Content-Type: application/json" \
   -H "Cookie: connect.sid=${SESSION_COOKIE}" \
   -d "{
     \"headers\": {
       \"authorization\": \"Bearer demo-token-123\"
     }
-  }" | jq .
+  }")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$TEST_AUTH" | jq .
+else
+  echo "$TEST_AUTH"
+fi
 echo ""
 
 echo "Step 8: Test External API - Get Setting with Cascade Resolution"
 echo "8a. Get setting for user (should return user-level value: 10)"
-curl -s -X GET "${BASE_URL}/api/global-settings/max_users?userId=user-456&clientId=client-123" \
+USER_SETTING=$(curl -s -X GET "${BASE_URL}/api/global-settings/max_users?userId=user-456&clientId=client-123" \
   -H "Authorization: Bearer demo-token-123" \
   -H "X-Organization-Id: ${ORG_ID}" \
-  -H "X-Auth-Name: default" | jq .
+  -H "X-Auth-Name: default")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$USER_SETTING" | jq .
+else
+  echo "$USER_SETTING"
+fi
 echo ""
 
 echo "8b. Get setting for client only (should return client-level value: 50)"
-curl -s -X GET "${BASE_URL}/api/global-settings/max_users?clientId=client-123" \
+CLIENT_SETTING=$(curl -s -X GET "${BASE_URL}/api/global-settings/max_users?clientId=client-123" \
   -H "Authorization: Bearer demo-token-123" \
   -H "X-Organization-Id: ${ORG_ID}" \
-  -H "X-Auth-Name: default" | jq .
+  -H "X-Auth-Name: default")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$CLIENT_SETTING" | jq .
+else
+  echo "$CLIENT_SETTING"
+fi
 echo ""
 
 echo "8c. Get setting globally (should return global-level value: 100)"
-curl -s -X GET "${BASE_URL}/api/global-settings/max_users" \
+GLOBAL_SETTING=$(curl -s -X GET "${BASE_URL}/api/global-settings/max_users" \
   -H "Authorization: Bearer demo-token-123" \
   -H "X-Organization-Id: ${ORG_ID}" \
-  -H "X-Auth-Name: default" | jq .
+  -H "X-Auth-Name: default")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$GLOBAL_SETTING" | jq .
+else
+  echo "$GLOBAL_SETTING"
+fi
 echo ""
 
 echo "Step 9: Create/Update Setting via External API"
-curl -s -X POST "${BASE_URL}/api/global-settings" \
+CREATE_SETTING=$(curl -s -X POST "${BASE_URL}/api/global-settings" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer demo-token-123" \
   -H "X-Organization-Id: ${ORG_ID}" \
@@ -131,13 +195,25 @@ curl -s -X POST "${BASE_URL}/api/global-settings" \
     \"settingKey\": \"api_rate_limit\",
     \"settingValue\": 1000,
     \"description\": \"API rate limit per minute\"
-  }" | jq .
+  }")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$CREATE_SETTING" | jq .
+else
+  echo "$CREATE_SETTING"
+fi
 echo ""
 
 echo "Step 10: List all settings (Internal API)"
 echo "Global Settings:"
-curl -s -X GET "${BASE_URL}/api/internal/global-settings?organizationId=${ORG_ID}" \
-  -H "Cookie: connect.sid=${SESSION_COOKIE}" | jq .
+SETTINGS_LIST=$(curl -s -X GET "${BASE_URL}/api/internal/global-settings?organizationId=${ORG_ID}" \
+  -H "Cookie: connect.sid=${SESSION_COOKIE}")
+
+if [ "$HAS_JQ" = true ]; then
+  echo "$SETTINGS_LIST" | jq .
+else
+  echo "$SETTINGS_LIST"
+fi
 echo ""
 
 echo "=== Demo Complete! ==="
