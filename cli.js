@@ -353,12 +353,10 @@ class SettingsCLI {
 
   // Global Settings Methods
   async listGlobalSettings() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
-    await this.request('GET', `/api/internal/global-settings?organizationId=${orgId}`, null, true);
+    await this.request('GET', '/api/settings/global', null, false);
   }
 
   async createGlobalSetting() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
     const settingKey = await this.question('Setting Key: ');
     const valueType = await this.question('Value Type (string/number/boolean/json) [string]: ') || 'string';
     let settingValue = await this.question('Setting Value: ');
@@ -369,12 +367,11 @@ class SettingsCLI {
 
     const description = await this.question('Description (optional): ');
 
-    await this.request('POST', '/api/internal/global-settings', {
-      organizationId: orgId,
+    await this.request('POST', '/api/settings/global', {
       settingKey,
       settingValue,
       description
-    }, true);
+    }, false);
   }
 
   async updateGlobalSetting() {
@@ -388,12 +385,12 @@ class SettingsCLI {
     if (settingValue) data.settingValue = settingValue;
     if (description) data.description = description;
 
-    await this.request('PUT', `/api/internal/global-settings/${id}`, data, true);
+    await this.request('PUT', `/api/settings/global/${id}`, data, false);
   }
 
   async deleteGlobalSetting() {
     const id = await this.question('Setting ID: ');
-    await this.request('DELETE', `/api/internal/global-settings/${id}`, null, true);
+    await this.request('DELETE', `/api/settings/global/${id}`, null, false);
   }
 
   async getGlobalSettingExternal() {
@@ -410,24 +407,21 @@ class SettingsCLI {
 
   // Client Settings Methods
   async listClientSettings() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
-    await this.request('GET', `/api/internal/client-settings?organizationId=${orgId}`, null, true);
+    await this.request('GET', `/api/settings/client`, null, false);
   }
 
   async createClientSetting() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
     const clientId = await this.question('Client ID: ');
     const settingKey = await this.question('Setting Key: ');
     const settingValue = await this.question('Setting Value: ');
     const description = await this.question('Description (optional): ');
 
-    await this.request('POST', '/api/internal/client-settings', {
-      organizationId: orgId,
+    await this.request('POST', '/api/settings/client', {
       clientId,
       settingKey,
       settingValue,
       description
-    }, true);
+    }, false);
   }
 
   async updateClientSetting() {
@@ -438,34 +432,31 @@ class SettingsCLI {
     const data = { settingValue };
     if (description) data.description = description;
 
-    await this.request('PUT', `/api/internal/client-settings/${id}`, data, true);
+    await this.request('PUT', `/api/settings/client/${id}`, data, false);
   }
 
   async deleteClientSetting() {
     const id = await this.question('Setting ID: ');
-    await this.request('DELETE', `/api/internal/client-settings/${id}`, null, true);
+    await this.request('DELETE', `/api/settings/client/${id}`, null, false);
   }
 
   // User Settings Methods
   async listUserSettings() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
-    await this.request('GET', `/api/internal/user-settings?organizationId=${orgId}`, null, true);
+    await this.request('GET', `/api/settings/user`, null, false);
   }
 
   async createUserSetting() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
     const userId = await this.question('User ID: ');
     const settingKey = await this.question('Setting Key: ');
     const settingValue = await this.question('Setting Value: ');
     const description = await this.question('Description (optional): ');
 
-    await this.request('POST', '/api/internal/user-settings', {
-      organizationId: orgId,
+    await this.request('POST', '/api/settings/user', {
       userId,
       settingKey,
       settingValue,
       description
-    }, true);
+    }, false);
   }
 
   async updateUserSetting() {
@@ -476,34 +467,31 @@ class SettingsCLI {
     const data = { settingValue };
     if (description) data.description = description;
 
-    await this.request('PUT', `/api/internal/user-settings/${id}`, data, true);
+    await this.request('PUT', `/api/settings/user/${id}`, data, false);
   }
 
   async deleteUserSetting() {
     const id = await this.question('Setting ID: ');
-    await this.request('DELETE', `/api/internal/user-settings/${id}`, null, true);
+    await this.request('DELETE', `/api/settings/user/${id}`, null, false);
   }
 
   // Dynamic Settings Methods
   async listDynamicSettings() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
-    await this.request('GET', `/api/internal/dynamic-settings?organizationId=${orgId}`, null, true);
+    await this.request('GET', `/api/settings/dynamic`, null, false);
   }
 
   async createDynamicSetting() {
-    const orgId = await this.question(`Organization ID [${this.orgId}]: `) || this.orgId;
     const uniqueId = await this.question('Unique ID: ');
     const settingKey = await this.question('Setting Key: ');
     const settingValue = await this.question('Setting Value: ');
     const description = await this.question('Description (optional): ');
 
-    await this.request('POST', '/api/internal/dynamic-settings', {
-      organizationId: orgId,
+    await this.request('POST', '/api/settings/dynamic', {
       uniqueId,
       settingKey,
       settingValue,
       description
-    }, true);
+    }, false);
   }
 
   async updateDynamicSetting() {
@@ -514,12 +502,12 @@ class SettingsCLI {
     const data = { settingValue };
     if (description) data.description = description;
 
-    await this.request('PUT', `/api/internal/dynamic-settings/${id}`, data, true);
+    await this.request('PUT', `/api/settings/dynamic/${id}`, data, false);
   }
 
   async deleteDynamicSetting() {
     const id = await this.question('Setting ID: ');
-    await this.request('DELETE', `/api/internal/dynamic-settings/${id}`, null, true);
+    await this.request('DELETE', `/api/settings/dynamic/${id}`, null, false);
   }
 
   // DynamicAuth Methods
@@ -537,7 +525,6 @@ class SettingsCLI {
     const description = await this.question('Description (optional): ');
 
     const data = {
-      organizationId: orgId,
       name,
       type,
       enabled,
