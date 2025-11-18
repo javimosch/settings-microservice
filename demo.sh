@@ -3,7 +3,9 @@
 echo "=== Settings Microservice Demo Script ==="
 echo ""
 
-BASE_URL="http://localhost:3000"
+source .env
+
+BASE_URL="http://localhost:${PORT}"
 ORG_ID=""
 AUTH_ID=""
 
@@ -13,7 +15,7 @@ SESSION_COOKIE=$(curl -s -c - -X POST "${BASE_URL}/login" \
   -d "username=admin&password=admin123" | grep connect.sid | awk '{print $7}')
 
 if [ -z "$SESSION_COOKIE" ]; then
-  echo "❌ Login failed. Make sure the server is running on port 3000"
+  echo "❌ Login failed. Make sure the server is running on port ${PORT}"
   exit 1
 fi
 echo "✅ Login successful"

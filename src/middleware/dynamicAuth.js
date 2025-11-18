@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { VM } = require('vm2');
 const Mustache = require('mustache');
+const mongoose = require('mongoose');
 const DynamicAuth = require('../models/DynamicAuth');
 const cache = require('../utils/cache');
 const logger = require('../utils/logger');
@@ -111,7 +112,7 @@ const dynamicAuthMiddleware = async (req, res, next) => {
 
     req.authResult = result;
     req.permissions = result.permissions || {};
-    req.organizationId = orgId;
+    req.organizationId = new mongoose.Types.ObjectId(orgId);
 
     next();
   } catch (error) {
