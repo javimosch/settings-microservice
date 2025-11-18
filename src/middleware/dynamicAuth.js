@@ -83,6 +83,7 @@ const dynamicAuthMiddleware = async (req, res, next) => {
     if (cached) {
       req.authResult = cached;
       req.permissions = cached.permissions || {};
+      req.organizationId = new mongoose.Types.ObjectId(orgId);
       return next();
     }
 

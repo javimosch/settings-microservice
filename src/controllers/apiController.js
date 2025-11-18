@@ -10,7 +10,7 @@ exports.getSetting = async (req, res) => {
     const { clientId, userId } = req.query;
     const organizationId = req.organizationId;
 
-    let settingValue = null;
+    logger.info('getSetting called', { settingKey, clientId, userId, organizationId: organizationId.toString() });
 
     if (userId) {
       const userSetting = await UserSetting.findOne({ organizationId, userId, settingKey });
@@ -27,6 +27,7 @@ exports.getSetting = async (req, res) => {
     }
 
     const globalSetting = await GlobalSetting.findOne({ organizationId, settingKey });
+    logger.info('Global setting query result', { found: !!globalSetting, organizationId: organizationId.toString(), settingKey });
     if (globalSetting) {
       return res.json({ source: 'global', value: globalSetting.settingValue, setting: globalSetting });
     }
