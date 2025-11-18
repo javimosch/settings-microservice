@@ -79,13 +79,19 @@ class SettingsCLI {
         this.log(`Body: ${JSON.stringify(data, null, 2)}`, 'dim');
       }
 
-      const response = await axios({
+      const config = {
         method,
         url,
         headers,
-        data,
         validateStatus: () => true
-      });
+      };
+
+      // Only include data for methods that support body
+      if (data && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
+        config.data = data;
+      }
+
+      const response = await axios(config);
 
       this.log(`\n← Status: ${response.status} ${response.statusText}`, 
         response.status < 300 ? 'green' : 'red');
