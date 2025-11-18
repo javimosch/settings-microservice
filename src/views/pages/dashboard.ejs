@@ -1,0 +1,164 @@
+<div x-data="dashboardData()">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+    <p class="text-gray-600 mt-2">Manage organizations and settings</p>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-semibold">Organizations</h2>
+      <button 
+        @click="showOrgForm = true; editingOrg = null"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        + New Organization
+      </button>
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Select Organization:</label>
+      <select 
+        x-model="selectedOrgId"
+        @change="loadSettings()"
+        class="w-full border border-gray-300 rounded px-3 py-2"
+      >
+        <option value="">-- Select Organization --</option>
+        <template x-for="org in organizations" :key="org._id">
+          <option :value="org._id" x-text="org.name"></option>
+        </template>
+      </select>
+    </div>
+
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <template x-for="org in organizations" :key="org._id">
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap" x-text="org.name"></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="new Date(org.createdAt).toLocaleDateString()"></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <button @click="editOrg(org)" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+              <button @click="deleteOrg(org._id)" class="text-red-600 hover:text-red-900">Delete</button>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <div x-show="selectedOrgId" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Settings</h2>
+        <div class="space-x-2">
+          <a href="/settings/global" class="text-blue-600 hover:text-blue-900">Global</a>
+          <a href="/settings/client" class="text-blue-600 hover:text-blue-900">Client</a>
+          <a href="/settings/user" class="text-blue-600 hover:text-blue-900">User</a>
+          <a href="/settings/dynamic" class="text-blue-600 hover:text-blue-900">Dynamic</a>
+        </div>
+      </div>
+      <p class="text-gray-600">Manage three-tier settings and dynamic settings</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Dynamic Auth</h2>
+        <a href="/dynamicauth" class="text-blue-600 hover:text-blue-900">Manage</a>
+      </div>
+      <p class="text-gray-600">Configure authentication middlewares for external APIs</p>
+    </div>
+  </div>
+
+  <div x-show="showOrgForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+      <h3 class="text-xl font-bold mb-4" x-text="editingOrg ? 'Edit Organization' : 'New Organization'"></h3>
+      <form @submit.prevent="saveOrg()">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+          <input 
+            x-model="orgForm.name"
+            type="text" 
+            required
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+          />
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button 
+            type="button"
+            @click="showOrgForm = false"
+            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function dashboardData() {
+  return {
+    organizations: [],
+    selectedOrgId: '',
+    showOrgForm: false,
+    editingOrg: null,
+    orgForm: { name: '' },
+
+    async init() {
+      await this.loadOrganizations();
+    },
+
+    async loadOrganizations() {
+      const data = await fetchAPI('/api/internal/organizations');
+      this.organizations = data;
+    },
+
+    async saveOrg() {
+      const url = this.editingOrg 
+        ? `/api/internal/organizations/${this.editingOrg._id}`
+        : '/api/internal/organizations';
+      const method = this.editingOrg ? 'PUT' : 'POST';
+      
+      await fetchAPI(url, {
+        method,
+        body: JSON.stringify(this.orgForm)
+      });
+      
+      this.showOrgForm = false;
+      this.orgForm = { name: '' };
+      await this.loadOrganizations();
+      showNotification('Organization saved successfully');
+    },
+
+    editOrg(org) {
+      this.editingOrg = org;
+      this.orgForm = { name: org.name };
+      this.showOrgForm = true;
+    },
+
+    async deleteOrg(id) {
+      if (!confirm('Are you sure?')) return;
+      await fetchAPI(`/api/internal/organizations/${id}`, { method: 'DELETE' });
+      await this.loadOrganizations();
+      showNotification('Organization deleted successfully');
+    },
+
+    async loadSettings() {
+      // To be implemented in settings pages
+    }
+  };
+}
+</script>

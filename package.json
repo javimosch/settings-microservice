@@ -1,0 +1,33 @@
+{
+  "name": "settings-microservice",
+  "version": "1.0.0",
+  "description": "Multi-tenant settings microservice with dynamic auth",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": ["settings", "microservice", "multi-tenant"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "connect-mongo": "^5.1.0",
+    "mongoose": "^8.0.3",
+    "axios": "^1.6.2",
+    "vm2": "^3.9.19",
+    "lru-cache": "^10.1.0",
+    "mustache": "^4.2.0",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "cors": "^2.8.5",
+    "winston": "^3.11.0",
+    "ejs": "^3.1.9",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
