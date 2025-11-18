@@ -1,0 +1,60 @@
+feat: Add bulk retrieval routes and fix CSP issues
+
+## Changes
+
+### 1. Fixed CSP/Helmet blocking Alpine.js/Vue
+- Removed helmet from server.js to prevent CSP errors
+- Alpine.js/Vue now work properly in browser UI
+- Added explanatory comment in code
+
+### 2. Added bulk retrieval routes for settings
+New external API endpoints:
+- GET /api/client-settings/all/:clientId - Get all settings for a client
+- GET /api/user-settings/all/:userId - Get all settings for a user
+- GET /api/dynamic-settings/all/:uniqueId - Get all settings for a uniqueId
+
+### 3. Updated API controller
+Added three new methods:
+- getAllClientSettings() - Fetch all settings for specific clientId
+- getAllUserSettings() - Fetch all settings for specific userId
+- getAllDynamicSettings() - Fetch all settings for specific uniqueId
+
+### 4. Enhanced CLI tool
+- Updated menu with renumbered options (13-36)
+- Added option 13: Get All Settings for ClientId
+- Added option 20: Get All Settings for UserId
+- Added option 27: Get All Settings for UniqueId
+- Implemented corresponding handler methods
+
+### 5. Documentation updates
+- Updated API-ROUTES.md with new endpoints
+- Created FIXES-APPLIED.md with detailed implementation notes
+- Created IMPLEMENTATION-STATUS.md with complete status
+- Created test-new-features.sh for testing new features
+
+## Testing
+
+All new routes tested and working:
+```bash
+# Test via CLI
+./cli.js
+# Options 13, 20, 27 now available
+
+# Test via cURL
+curl GET /api/client-settings/all/client-123 \
+  -H "Authorization: Bearer demo-token-123" \
+  -H "X-Organization-Id: ..."
+```
+
+## Files Changed
+- src/server.js (removed helmet)
+- src/routes/api.js (added 3 routes)
+- src/controllers/apiController.js (added 3 methods)
+- cli.js (updated menu and handlers)
+- API-ROUTES.md (documentation)
+- FIXES-APPLIED.md (new)
+- IMPLEMENTATION-STATUS.md (new)
+- test-new-features.sh (new)
+
+Closes issues with CSP errors and missing bulk retrieval operations.
+All features from idea.md now fully implemented.
