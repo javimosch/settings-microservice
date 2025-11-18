@@ -177,29 +177,32 @@ class SettingsCLI {
 
     this.log('\n👥 CLIENT SETTINGS', 'yellow');
     this.log('  10. List Client Settings');
-    this.log('  11. Create Client Setting');
-    this.log('  12. Update Client Setting');
-    this.log('  13. Delete Client Setting');
+    this.log('  11. Get Client Setting by ID');
+    this.log('  12. Create Client Setting');
+    this.log('  13. Update Client Setting');
+    this.log('  14. Delete Client Setting');
 
     this.log('\n👤 USER SETTINGS', 'yellow');
-    this.log('  14. List User Settings');
-    this.log('  15. Create User Setting');
-    this.log('  16. Update User Setting');
-    this.log('  17. Delete User Setting');
+    this.log('  15. List User Settings');
+    this.log('  16. Get User Setting by ID');
+    this.log('  17. Create User Setting');
+    this.log('  18. Update User Setting');
+    this.log('  19. Delete User Setting');
 
     this.log('\n🔄 DYNAMIC SETTINGS', 'yellow');
-    this.log('  18. List Dynamic Settings');
-    this.log('  19. Create Dynamic Setting');
-    this.log('  20. Update Dynamic Setting');
-    this.log('  21. Delete Dynamic Setting');
+    this.log('  20. List Dynamic Settings');
+    this.log('  21. Get Dynamic Setting by ID');
+    this.log('  22. Create Dynamic Setting');
+    this.log('  23. Update Dynamic Setting');
+    this.log('  24. Delete Dynamic Setting');
 
     this.log('\n🔐 DYNAMIC AUTH', 'yellow');
-    this.log('  22. List DynamicAuth Configs');
-    this.log('  23. Create DynamicAuth Config');
-    this.log('  24. Update DynamicAuth Config');
-    this.log('  25. Delete DynamicAuth Config');
-    this.log('  26. Test DynamicAuth Config');
-    this.log('  27. Invalidate Auth Cache');
+    this.log('  25. List DynamicAuth Configs');
+    this.log('  26. Create DynamicAuth Config');
+    this.log('  27. Update DynamicAuth Config');
+    this.log('  28. Delete DynamicAuth Config');
+    this.log('  29. Test DynamicAuth Config');
+    this.log('  30. Invalidate Auth Cache');
 
     this.log('\n🔧 CONFIGURATION', 'yellow');
     this.log('  c. Set Bearer Token & Org ID');
@@ -248,60 +251,69 @@ class SettingsCLI {
         await this.listClientSettings();
         break;
       case '11':
-        await this.createClientSetting();
+        await this.getClientSettingById();
         break;
       case '12':
-        await this.updateClientSetting();
+        await this.createClientSetting();
         break;
       case '13':
+        await this.updateClientSetting();
+        break;
+      case '14':
         await this.deleteClientSetting();
         break;
 
       // User Settings
-      case '14':
+      case '15':
         await this.listUserSettings();
         break;
-      case '15':
-        await this.createUserSetting();
-        break;
       case '16':
-        await this.updateUserSetting();
+        await this.getUserSettingById();
         break;
       case '17':
+        await this.createUserSetting();
+        break;
+      case '18':
+        await this.updateUserSetting();
+        break;
+      case '19':
         await this.deleteUserSetting();
         break;
 
       // Dynamic Settings
-      case '18':
+      case '20':
         await this.listDynamicSettings();
         break;
-      case '19':
+      case '21':
+        await this.getDynamicSettingById();
+        break;
+      case '22':
         await this.createDynamicSetting();
         break;
-      case '20':
+      case '23':
         await this.updateDynamicSetting();
         break;
-      case '21':
+      case '24':
         await this.deleteDynamicSetting();
         break;
 
       // DynamicAuth
-      case '22':
+      case '25':
         await this.listDynamicAuth();
         break;
-      case '23':
+      case '26':
         await this.createDynamicAuth();
         break;
-      case '24':
+      case '27':
         await this.updateDynamicAuth();
         break;
-      case '25':
+      case '28':
         await this.deleteDynamicAuth();
         break;
-      case '26':
+      case '29':
         await this.testDynamicAuth();
         break;
-      case '27':
+      case '30':
         await this.invalidateAuthCache();
         break;
 
@@ -440,6 +452,11 @@ class SettingsCLI {
     await this.request('DELETE', `/api/settings/client/${id}`, null, false);
   }
 
+  async getClientSettingById() {
+    const id = await this.question('Setting ID: ');
+    await this.request('GET', `/api/settings/client/${id}`, null, false);
+  }
+
   // User Settings Methods
   async listUserSettings() {
     await this.request('GET', `/api/settings/user`, null, false);
@@ -475,6 +492,11 @@ class SettingsCLI {
     await this.request('DELETE', `/api/settings/user/${id}`, null, false);
   }
 
+  async getUserSettingById() {
+    const id = await this.question('Setting ID: ');
+    await this.request('GET', `/api/settings/user/${id}`, null, false);
+  }
+
   // Dynamic Settings Methods
   async listDynamicSettings() {
     await this.request('GET', `/api/settings/dynamic`, null, false);
@@ -508,6 +530,11 @@ class SettingsCLI {
   async deleteDynamicSetting() {
     const id = await this.question('Setting ID: ');
     await this.request('DELETE', `/api/settings/dynamic/${id}`, null, false);
+  }
+
+  async getDynamicSettingById() {
+    const id = await this.question('Setting ID: ');
+    await this.request('GET', `/api/settings/dynamic/${id}`, null, false);
   }
 
   // DynamicAuth Methods

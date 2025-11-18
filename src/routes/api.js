@@ -22,24 +22,28 @@ router.get('/dynamic-settings/:uniqueId/:settingKey', apiController.getDynamicSe
 
 // Global Settings CRUD
 router.get('/settings/global', apiController.listGlobalSettings);
+router.get('/settings/global/:id', apiController.getGlobalSettingById);
 router.post('/settings/global', apiController.createOrUpdateGlobalSetting);
 router.put('/settings/global/:id', apiController.updateGlobalSetting);
 router.delete('/settings/global/:id', apiController.deleteGlobalSetting);
 
 // Client Settings CRUD
 router.get('/settings/client', apiController.listClientSettings);
+router.get('/settings/client/:id', apiController.getClientSettingById);
 router.post('/settings/client', apiController.createClientSetting);
 router.put('/settings/client/:id', apiController.updateClientSetting);
 router.delete('/settings/client/:id', apiController.deleteClientSetting);
 
 // User Settings CRUD
 router.get('/settings/user', apiController.listUserSettings);
+router.get('/settings/user/:id', apiController.getUserSettingById);
 router.post('/settings/user', apiController.createUserSetting);
 router.put('/settings/user/:id', apiController.updateUserSetting);
 router.delete('/settings/user/:id', apiController.deleteUserSetting);
 
 // Dynamic Settings CRUD
 router.get('/settings/dynamic', apiController.listDynamicSettings);
+router.get('/settings/dynamic/:id', apiController.getDynamicSettingById);
 router.post('/settings/dynamic', apiController.createDynamicSetting);
 router.put('/settings/dynamic/:id', apiController.updateDynamicSetting);
 router.delete('/settings/dynamic/:id', apiController.deleteDynamicSetting);

@@ -182,6 +182,75 @@ exports.listDynamicSettings = async (req, res) => {
   }
 };
 
+// GET by ID operations
+exports.getGlobalSettingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organizationId = req.organizationId;
+    
+    const setting = await GlobalSetting.findOne({ _id: id, organizationId });
+    if (!setting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    res.json(setting);
+  } catch (error) {
+    logger.error('Error getting global setting:', error);
+    res.status(500).json({ error: 'Failed to get setting' });
+  }
+};
+
+exports.getClientSettingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organizationId = req.organizationId;
+    
+    const setting = await ClientSetting.findOne({ _id: id, organizationId });
+    if (!setting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    res.json(setting);
+  } catch (error) {
+    logger.error('Error getting client setting:', error);
+    res.status(500).json({ error: 'Failed to get setting' });
+  }
+};
+
+exports.getUserSettingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organizationId = req.organizationId;
+    
+    const setting = await UserSetting.findOne({ _id: id, organizationId });
+    if (!setting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    res.json(setting);
+  } catch (error) {
+    logger.error('Error getting user setting:', error);
+    res.status(500).json({ error: 'Failed to get setting' });
+  }
+};
+
+exports.getDynamicSettingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organizationId = req.organizationId;
+    
+    const setting = await DynamicSetting.findOne({ _id: id, organizationId });
+    if (!setting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    res.json(setting);
+  } catch (error) {
+    logger.error('Error getting dynamic setting:', error);
+    res.status(500).json({ error: 'Failed to get setting' });
+  }
+};
+
 // CREATE operations
 exports.createClientSetting = async (req, res) => {
   try {
