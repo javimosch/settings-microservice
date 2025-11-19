@@ -1,11 +1,22 @@
 const DynamicAuth = require('../models/DynamicAuth');
 const logger = require('../utils/logger');
 const cache = require('../utils/cache');
+const { isOrgAllowed, buildOrgFilter } = require('../utils/permissionFilters');
 
 exports.listDynamicAuth = async (req, res) => {
   try {
     const { organizationId } = req.query;
-    const filter = organizationId ? { organizationId } : {};
+    const userPermissions = req.session.permissions;
+    
+    let filter = buildOrgFilter(userPermissions);
+    
+    if (organizationId) {
+      if (!isOrgAllowed(userPermissions, organizationId)) {
+        return res.status(403).json({ error: 'Access denied to this organization' });
+      }
+      filter.organizationId = organizationId;
+    }
+    
     const auths = await DynamicAuth.find(filter).sort({ name: 1 });
     res.json(auths);
   } catch (error) {
@@ -17,6 +28,12 @@ exports.listDynamicAuth = async (req, res) => {
 exports.createDynamicAuth = async (req, res) => {
   try {
     const { organizationId, name, type, http, jsCode, cacheTTLSeconds, enabled, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    if (!isOrgAllowed(userPermissions, organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
     const auth = new DynamicAuth({
       organizationId,
       name,
@@ -43,6 +60,17 @@ exports.updateDynamicAuth = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, type, http, jsCode, cacheTTLSeconds, enabled, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    const existing = await DynamicAuth.findById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Dynamic auth not found' });
+    }
+    
+    if (!isOrgAllowed(userPermissions, existing.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
     const auth = await DynamicAuth.findByIdAndUpdate(
       id,
       { 
@@ -52,9 +80,6 @@ exports.updateDynamicAuth = async (req, res) => {
       },
       { new: true, runValidators: true }
     );
-    if (!auth) {
-      return res.status(404).json({ error: 'Dynamic auth not found' });
-    }
     res.json(auth);
   } catch (error) {
     logger.error('Error updating dynamic auth:', error);
@@ -65,10 +90,18 @@ exports.updateDynamicAuth = async (req, res) => {
 exports.deleteDynamicAuth = async (req, res) => {
   try {
     const { id } = req.params;
-    const auth = await DynamicAuth.findByIdAndDelete(id);
+    const userPermissions = req.session.permissions;
+    
+    const auth = await DynamicAuth.findById(id);
     if (!auth) {
       return res.status(404).json({ error: 'Dynamic auth not found' });
     }
+    
+    if (!isOrgAllowed(userPermissions, auth.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    await DynamicAuth.findByIdAndDelete(id);
     res.json({ message: 'Dynamic auth deleted successfully' });
   } catch (error) {
     logger.error('Error deleting dynamic auth:', error);

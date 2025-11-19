@@ -61,30 +61,48 @@
         <div class="bg-white rounded-t-lg shadow">
           <div class="border-b border-gray-200 overflow-x-auto">
             <nav class="-mb-px flex space-x-4 sm:space-x-8 px-3 sm:px-6" aria-label="Tabs">
+              <% 
+              const hasGlobal = typeof permissions !== 'undefined' && permissions?.features?.globalSettings?.read;
+              const hasClient = typeof permissions !== 'undefined' && permissions?.features?.clientSettings?.read;
+              const hasUser = typeof permissions !== 'undefined' && permissions?.features?.userSettings?.read;
+              const hasDynamic = typeof permissions !== 'undefined' && permissions?.features?.dynamicSettings?.read;
+              %>
+              
+              <% if (hasGlobal) { %>
               <button
                 @click="activeTab = 'global'"
                 :class="[activeTab === 'global' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm']"
               >
                 Global
               </button>
+              <% } %>
+              
+              <% if (hasClient) { %>
               <button
                 @click="activeTab = 'client'"
                 :class="[activeTab === 'client' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm']"
               >
                 Client
               </button>
+              <% } %>
+              
+              <% if (hasUser) { %>
               <button
                 @click="activeTab = 'user'"
                 :class="[activeTab === 'user' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm']"
               >
                 User
               </button>
+              <% } %>
+              
+              <% if (hasDynamic) { %>
               <button
                 @click="activeTab = 'dynamic'"
                 :class="[activeTab === 'dynamic' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm']"
               >
                 Dynamic
               </button>
+              <% } %>
             </nav>
           </div>
         </div>
@@ -414,10 +432,13 @@
 
     createApp({
       data() {
+        <% 
+        const defaultTab = hasClient ? 'client' : (hasGlobal ? 'global' : (hasUser ? 'user' : 'dynamic'));
+        %>
         return {
           organizations: [],
           selectedOrgId: '',
-          activeTab: 'global',
+          activeTab: '<%= defaultTab %>',
           globalSettings: [],
           clientSettings: [],
           userSettings: [],
@@ -456,11 +477,19 @@
           // Save to localStorage whenever org is selected
           localStorage.setItem('selectedOrgId', this.selectedOrgId);
           this.selectedSettings = [];
+          
+          const permissions = {
+            hasGlobal: <%= hasGlobal %>,
+            hasClient: <%= hasClient %>,
+            hasUser: <%= hasUser %>,
+            hasDynamic: <%= hasDynamic %>
+          };
+          
           await Promise.all([
-            this.loadGlobalSettings(),
-            this.loadClientSettings(),
-            this.loadUserSettings(),
-            this.loadDynamicSettings()
+            permissions.hasGlobal ? this.loadGlobalSettings() : Promise.resolve(),
+            permissions.hasClient ? this.loadClientSettings() : Promise.resolve(),
+            permissions.hasUser ? this.loadUserSettings() : Promise.resolve(),
+            permissions.hasDynamic ? this.loadDynamicSettings() : Promise.resolve()
           ]);
         },
 

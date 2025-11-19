@@ -3,11 +3,29 @@ const ClientSetting = require('../models/ClientSetting');
 const UserSetting = require('../models/UserSetting');
 const DynamicSetting = require('../models/DynamicSetting');
 const logger = require('../utils/logger');
+const { 
+  isOrgAllowed, 
+  isClientAllowed, 
+  isUserIdAllowed,
+  buildOrgFilter,
+  buildClientFilter,
+  buildUserIdFilter
+} = require('../utils/permissionFilters');
 
 exports.listGlobalSettings = async (req, res) => {
   try {
     const { organizationId } = req.query;
-    const filter = organizationId ? { organizationId } : {};
+    const userPermissions = req.session.permissions;
+    
+    let filter = buildOrgFilter(userPermissions);
+    if (organizationId) {
+      // Check if user has access to this org
+      if (!isOrgAllowed(userPermissions, organizationId)) {
+        return res.status(403).json({ error: 'Access denied to this organization' });
+      }
+      filter.organizationId = organizationId;
+    }
+    
     const settings = await GlobalSetting.find(filter).sort({ settingKey: 1 });
     res.json(settings);
   } catch (error) {
@@ -19,6 +37,13 @@ exports.listGlobalSettings = async (req, res) => {
 exports.createGlobalSetting = async (req, res) => {
   try {
     const { organizationId, settingKey, settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    // Check if user has access to this organization
+    if (!isOrgAllowed(userPermissions, organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
     const setting = new GlobalSetting({
       organizationId,
       settingKey,
@@ -41,14 +66,23 @@ exports.updateGlobalSetting = async (req, res) => {
   try {
     const { id } = req.params;
     const { settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    // Get the setting first to check organization access
+    const existingSetting = await GlobalSetting.findById(id);
+    if (!existingSetting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    if (!isOrgAllowed(userPermissions, existingSetting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
     const setting = await GlobalSetting.findByIdAndUpdate(
       id,
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
-    if (!setting) {
-      return res.status(404).json({ error: 'Setting not found' });
-    }
     res.json(setting);
   } catch (error) {
     logger.error('Error updating global setting:', error);
@@ -59,10 +93,19 @@ exports.updateGlobalSetting = async (req, res) => {
 exports.deleteGlobalSetting = async (req, res) => {
   try {
     const { id } = req.params;
-    const setting = await GlobalSetting.findByIdAndDelete(id);
+    const userPermissions = req.session.permissions;
+    
+    // Get the setting first to check organization access
+    const setting = await GlobalSetting.findById(id);
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    
+    if (!isOrgAllowed(userPermissions, setting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    await GlobalSetting.findByIdAndDelete(id);
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting global setting:', error);
@@ -73,9 +116,24 @@ exports.deleteGlobalSetting = async (req, res) => {
 exports.listClientSettings = async (req, res) => {
   try {
     const { organizationId, clientId } = req.query;
-    const filter = {};
-    if (organizationId) filter.organizationId = organizationId;
-    if (clientId) filter.clientId = clientId;
+    const userPermissions = req.session.permissions;
+    
+    let filter = { ...buildOrgFilter(userPermissions), ...buildClientFilter(userPermissions) };
+    
+    if (organizationId) {
+      if (!isOrgAllowed(userPermissions, organizationId)) {
+        return res.status(403).json({ error: 'Access denied to this organization' });
+      }
+      filter.organizationId = organizationId;
+    }
+    
+    if (clientId) {
+      if (!isClientAllowed(userPermissions, clientId)) {
+        return res.status(403).json({ error: 'Access denied to this client' });
+      }
+      filter.clientId = clientId;
+    }
+    
     const settings = await ClientSetting.find(filter).sort({ clientId: 1, settingKey: 1 });
     res.json(settings);
   } catch (error) {
@@ -87,6 +145,18 @@ exports.listClientSettings = async (req, res) => {
 exports.createClientSetting = async (req, res) => {
   try {
     const { organizationId, clientId, settingKey, settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    // Check organization access
+    if (!isOrgAllowed(userPermissions, organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    // Check client access
+    if (!isClientAllowed(userPermissions, clientId)) {
+      return res.status(403).json({ error: 'Access denied to this client' });
+    }
+    
     const setting = new ClientSetting({
       organizationId,
       clientId,
@@ -110,14 +180,27 @@ exports.updateClientSetting = async (req, res) => {
   try {
     const { id } = req.params;
     const { settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    // Get the setting first to check access
+    const existingSetting = await ClientSetting.findById(id);
+    if (!existingSetting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    if (!isOrgAllowed(userPermissions, existingSetting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    if (!isClientAllowed(userPermissions, existingSetting.clientId)) {
+      return res.status(403).json({ error: 'Access denied to this client' });
+    }
+    
     const setting = await ClientSetting.findByIdAndUpdate(
       id,
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
-    if (!setting) {
-      return res.status(404).json({ error: 'Setting not found' });
-    }
     res.json(setting);
   } catch (error) {
     logger.error('Error updating client setting:', error);
@@ -128,10 +211,22 @@ exports.updateClientSetting = async (req, res) => {
 exports.deleteClientSetting = async (req, res) => {
   try {
     const { id } = req.params;
-    const setting = await ClientSetting.findByIdAndDelete(id);
+    const userPermissions = req.session.permissions;
+    
+    const setting = await ClientSetting.findById(id);
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    
+    if (!isOrgAllowed(userPermissions, setting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    if (!isClientAllowed(userPermissions, setting.clientId)) {
+      return res.status(403).json({ error: 'Access denied to this client' });
+    }
+    
+    await ClientSetting.findByIdAndDelete(id);
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting client setting:', error);
@@ -142,9 +237,24 @@ exports.deleteClientSetting = async (req, res) => {
 exports.listUserSettings = async (req, res) => {
   try {
     const { organizationId, userId } = req.query;
-    const filter = {};
-    if (organizationId) filter.organizationId = organizationId;
-    if (userId) filter.userId = userId;
+    const userPermissions = req.session.permissions;
+    
+    let filter = { ...buildOrgFilter(userPermissions), ...buildUserIdFilter(userPermissions) };
+    
+    if (organizationId) {
+      if (!isOrgAllowed(userPermissions, organizationId)) {
+        return res.status(403).json({ error: 'Access denied to this organization' });
+      }
+      filter.organizationId = organizationId;
+    }
+    
+    if (userId) {
+      if (!isUserIdAllowed(userPermissions, userId)) {
+        return res.status(403).json({ error: 'Access denied to this user' });
+      }
+      filter.userId = userId;
+    }
+    
     const settings = await UserSetting.find(filter).sort({ userId: 1, settingKey: 1 });
     res.json(settings);
   } catch (error) {
@@ -156,6 +266,16 @@ exports.listUserSettings = async (req, res) => {
 exports.createUserSetting = async (req, res) => {
   try {
     const { organizationId, userId, settingKey, settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    if (!isOrgAllowed(userPermissions, organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    if (!isUserIdAllowed(userPermissions, userId)) {
+      return res.status(403).json({ error: 'Access denied to this user' });
+    }
+    
     const setting = new UserSetting({
       organizationId,
       userId,
@@ -179,14 +299,26 @@ exports.updateUserSetting = async (req, res) => {
   try {
     const { id } = req.params;
     const { settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    const existingSetting = await UserSetting.findById(id);
+    if (!existingSetting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    if (!isOrgAllowed(userPermissions, existingSetting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    if (!isUserIdAllowed(userPermissions, existingSetting.userId)) {
+      return res.status(403).json({ error: 'Access denied to this user' });
+    }
+    
     const setting = await UserSetting.findByIdAndUpdate(
       id,
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
-    if (!setting) {
-      return res.status(404).json({ error: 'Setting not found' });
-    }
     res.json(setting);
   } catch (error) {
     logger.error('Error updating user setting:', error);
@@ -197,10 +329,22 @@ exports.updateUserSetting = async (req, res) => {
 exports.deleteUserSetting = async (req, res) => {
   try {
     const { id } = req.params;
-    const setting = await UserSetting.findByIdAndDelete(id);
+    const userPermissions = req.session.permissions;
+    
+    const setting = await UserSetting.findById(id);
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    
+    if (!isOrgAllowed(userPermissions, setting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    if (!isUserIdAllowed(userPermissions, setting.userId)) {
+      return res.status(403).json({ error: 'Access denied to this user' });
+    }
+    
+    await UserSetting.findByIdAndDelete(id);
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting user setting:', error);
@@ -211,9 +355,18 @@ exports.deleteUserSetting = async (req, res) => {
 exports.listDynamicSettings = async (req, res) => {
   try {
     const { organizationId, uniqueId } = req.query;
-    const filter = {};
-    if (organizationId) filter.organizationId = organizationId;
+    const userPermissions = req.session.permissions;
+    
+    let filter = buildOrgFilter(userPermissions);
+    
+    if (organizationId) {
+      if (!isOrgAllowed(userPermissions, organizationId)) {
+        return res.status(403).json({ error: 'Access denied to this organization' });
+      }
+      filter.organizationId = organizationId;
+    }
     if (uniqueId) filter.uniqueId = uniqueId;
+    
     const settings = await DynamicSetting.find(filter).sort({ uniqueId: 1, settingKey: 1 });
     res.json(settings);
   } catch (error) {
@@ -225,6 +378,12 @@ exports.listDynamicSettings = async (req, res) => {
 exports.createDynamicSetting = async (req, res) => {
   try {
     const { organizationId, uniqueId, settingKey, settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    if (!isOrgAllowed(userPermissions, organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
     const setting = new DynamicSetting({
       organizationId,
       uniqueId,
@@ -248,14 +407,22 @@ exports.updateDynamicSetting = async (req, res) => {
   try {
     const { id } = req.params;
     const { settingValue, description } = req.body;
+    const userPermissions = req.session.permissions;
+    
+    const existingSetting = await DynamicSetting.findById(id);
+    if (!existingSetting) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    if (!isOrgAllowed(userPermissions, existingSetting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
     const setting = await DynamicSetting.findByIdAndUpdate(
       id,
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
-    if (!setting) {
-      return res.status(404).json({ error: 'Setting not found' });
-    }
     res.json(setting);
   } catch (error) {
     logger.error('Error updating dynamic setting:', error);
@@ -266,10 +433,18 @@ exports.updateDynamicSetting = async (req, res) => {
 exports.deleteDynamicSetting = async (req, res) => {
   try {
     const { id } = req.params;
-    const setting = await DynamicSetting.findByIdAndDelete(id);
+    const userPermissions = req.session.permissions;
+    
+    const setting = await DynamicSetting.findById(id);
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    
+    if (!isOrgAllowed(userPermissions, setting.organizationId)) {
+      return res.status(403).json({ error: 'Access denied to this organization' });
+    }
+    
+    await DynamicSetting.findByIdAndDelete(id);
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting dynamic setting:', error);
