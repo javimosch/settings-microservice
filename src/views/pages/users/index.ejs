@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management - Settings Microservice</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <%- include('../../partials/nav', { user: user, userRole: userRole }) %>
+
+  <div class="max-w-7xl mx-auto py-4 sm:py-6 px-2 sm:px-4" id="app">
+    <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
+        <p class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage user accounts and permissions</p>
+      </div>
+      <button 
+        @click="openUserForm()"
+        class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto"
+      >
+        + New User
+      </button>
+    </div>
+
+    <!-- User List Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+              <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Email</th>
+              <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+              <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Org Access</th>
+              <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Status</th>
+              <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="user in users" :key="user._id">
+              <td class="px-3 sm:px-6 py-3 sm:py-4 font-medium text-sm">
+                <div>{{ user.username }}</div>
+                <div class="md:hidden text-xs text-gray-500 mt-1">{{ user.email || '-' }}</div>
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4 text-sm text-gray-500 hidden md:table-cell">{{ user.email || '-' }}</td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4">
+                <span :class="getRoleBadgeClass(user.role)" class="px-2 py-1 rounded text-xs font-semibold whitespace-nowrap">
+                  {{ user.role }}
+                </span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">
+                <span v-if="user.permissions.organizations === 'all'" class="text-blue-600 font-medium">All Orgs</span>
+                <span v-else class="text-gray-600">{{ user.permissions.organizationIds.length }} org(s)</span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4 hidden lg:table-cell">
+                <span :class="user.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
+                      class="px-2 py-1 rounded text-xs font-semibold">
+                  {{ user.active ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
+                <button @click="editUser(user)" class="text-blue-600 hover:text-blue-900 mr-2 sm:mr-3">Edit</button>
+                <button @click="deleteUser(user._id)" class="text-red-600 hover:text-red-900">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- User Form Modal -->
+    <div v-show="showUserForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+      <div class="bg-white rounded-lg p-4 sm:p-8 max-w-4xl w-full max-h-screen overflow-y-auto my-4">
+        <h3 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{{ editingUser ? 'Edit User' : 'New User' }}</h3>
+        
+        <!-- Basic Info -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div>
+            <label class="block text-xs sm:text-sm font-bold mb-2">Username *</label>
+            <input v-model="userForm.username" type="text" required 
+                   :disabled="editingUser !== null"
+                   class="w-full border rounded px-2 sm:px-3 py-2 text-sm sm:text-base disabled:bg-gray-100" />
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-bold mb-2">Email</label>
+            <input v-model="userForm.email" type="email" 
+                   class="w-full border rounded px-2 sm:px-3 py-2 text-sm sm:text-base" />
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-bold mb-2">Password {{ editingUser ? '(leave empty to keep)' : '*' }}</label>
+            <input v-model="userForm.password" type="password" :required="!editingUser"
+                   class="w-full border rounded px-2 sm:px-3 py-2 text-sm sm:text-base" />
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-bold mb-2">Role *</label>
+            <select v-model="userForm.role" class="w-full border rounded px-2 sm:px-3 py-2 text-sm sm:text-base">
+              <option value="admin">Admin</option>
+              <option value="support">Support</option>
+              <option value="support_limited">Support Limited</option>
+              <option value="support_readonly">Support Read-Only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Quick Templates -->
+        <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 rounded">
+          <label class="block text-xs sm:text-sm font-bold mb-2">Quick Permission Templates</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" @click="applyTemplate('full_admin')" class="bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm">
+              Full Admin
+            </button>
+            <button type="button" @click="applyTemplate('org_admin')" class="bg-green-500 hover:bg-green-600 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm">
+              Org Admin
+            </button>
+            <button type="button" @click="applyTemplate('support_agent')" class="bg-purple-500 hover:bg-purple-600 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm">
+              Support Agent
+            </button>
+            <button type="button" @click="applyTemplate('readonly')" class="bg-gray-500 hover:bg-gray-600 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm">
+              Read-Only
+            </button>
+          </div>
+        </div>
+
+        <!-- Organization Scope -->
+        <div class="mb-4 sm:mb-6">
+          <label class="block text-xs sm:text-sm font-bold mb-2">Organization Access</label>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="radio" v-model="userForm.permissions.organizations" value="all" class="mr-2">
+              <span class="text-sm">All Organizations</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio" v-model="userForm.permissions.organizations" value="specific" class="mr-2">
+              <span class="text-sm">Specific Organizations</span>
+            </label>
+          </div>
+          <div v-if="userForm.permissions.organizations === 'specific'" class="mt-3">
+            <label class="block text-xs sm:text-sm font-medium mb-2">Select Organizations (comma-separated IDs)</label>
+            <input v-model="orgIdsInput" type="text" placeholder="org_id_1, org_id_2"
+                   class="w-full border rounded px-2 sm:px-3 py-2 text-sm" />
+            <p class="text-xs text-gray-500 mt-1">Enter organization IDs separated by commas</p>
+          </div>
+        </div>
+
+        <!-- Feature Permissions -->
+        <div class="mb-4 sm:mb-6">
+          <label class="block text-xs sm:text-sm font-bold mb-3">Feature Permissions</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div v-for="(feature, key) in userForm.permissions.features" :key="key" class="border rounded p-3">
+              <div class="font-medium text-sm mb-2 capitalize">{{ formatFeatureName(key) }}</div>
+              <div class="flex space-x-4">
+                <label class="flex items-center text-sm">
+                  <input type="checkbox" v-model="feature.read" class="mr-1">
+                  Read
+                </label>
+                <label class="flex items-center text-sm">
+                  <input type="checkbox" v-model="feature.write" class="mr-1">
+                  Write
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resource Constraints -->
+        <div class="mb-4 sm:mb-6">
+          <label class="block text-xs sm:text-sm font-bold mb-2">Resource Constraints (Optional)</label>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium mb-1">Client IDs (comma-separated)</label>
+              <input v-model="clientIdsInput" type="text" placeholder="74, 68, 42"
+                     class="w-full border rounded px-2 sm:px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium mb-1">User IDs (comma-separated)</label>
+              <input v-model="userIdsInput" type="text" placeholder="74_alan, 68_john"
+                     class="w-full border rounded px-2 sm:px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium mb-1">User ID Patterns</label>
+              <div v-for="(pattern, index) in userForm.permissions.resourceConstraints.userIdPatterns" :key="index" class="flex gap-2 mb-2">
+                <input v-model="pattern.pattern" type="text" placeholder="68_"
+                       class="flex-1 border rounded px-2 py-1 text-sm" />
+                <select v-model="pattern.matchType" class="border rounded px-2 py-1 text-sm">
+                  <option value="exact">Exact</option>
+                  <option value="prefix">Prefix</option>
+                  <option value="suffix">Suffix</option>
+                  <option value="contains">Contains</option>
+                  <option value="regex">Regex</option>
+                </select>
+                <button type="button" @click="removePattern(index)" class="text-red-600 hover:text-red-800 px-2">×</button>
+              </div>
+              <button type="button" @click="addPattern()" class="text-blue-600 hover:text-blue-800 text-xs sm:text-sm">
+                + Add Pattern
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="mb-4 sm:mb-6">
+          <label class="flex items-center">
+            <input type="checkbox" v-model="userForm.active" class="mr-2">
+            <span class="text-sm font-medium">Active User</span>
+          </label>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0 sm:space-x-3">
+          <button type="button" @click="closeForm()"
+                  class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded text-sm sm:text-base order-2 sm:order-1">
+            Cancel
+          </button>
+          <button type="button" @click="saveUser()"
+                  class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base order-1 sm:order-2">
+            Save User
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          users: [],
+          showUserForm: false,
+          editingUser: null,
+          userForm: this.getEmptyForm(),
+          orgIdsInput: '',
+          clientIdsInput: '',
+          userIdsInput: ''
+        };
+      },
+      mounted() {
+        this.loadUsers();
+      },
+      methods: {
+        getEmptyForm() {
+          return {
+            username: '',
+            email: '',
+            password: '',
+            role: 'support',
+            permissions: {
+              organizations: 'specific',
+              organizationIds: [],
+              features: {
+                globalSettings: { read: false, write: false },
+                clientSettings: { read: false, write: false },
+                userSettings: { read: false, write: false },
+                dynamicSettings: { read: false, write: false },
+                dynamicAuth: { read: false, write: false },
+                organizations: { read: false, write: false }
+              },
+              resourceConstraints: {
+                clientIds: [],
+                userIds: [],
+                userIdPatterns: []
+              }
+            },
+            active: true
+          };
+        },
+
+        async loadUsers() {
+          try {
+            const response = await fetch('/users/api');
+            this.users = await response.json();
+          } catch (error) {
+            showNotification('Failed to load users: ' + error.message, 'error');
+          }
+        },
+
+        openUserForm() {
+          this.editingUser = null;
+          this.userForm = this.getEmptyForm();
+          this.orgIdsInput = '';
+          this.clientIdsInput = '';
+          this.userIdsInput = '';
+          this.showUserForm = true;
+        },
+
+        editUser(user) {
+          this.editingUser = user;
+          this.userForm = JSON.parse(JSON.stringify(user));
+          this.userForm.password = '';
+          this.orgIdsInput = this.userForm.permissions.organizationIds.join(', ');
+          this.clientIdsInput = this.userForm.permissions.resourceConstraints.clientIds.join(', ');
+          this.userIdsInput = this.userForm.permissions.resourceConstraints.userIds.join(', ');
+          this.showUserForm = true;
+        },
+
+        async saveUser() {
+          try {
+            this.userForm.permissions.organizationIds = this.orgIdsInput
+              .split(',')
+              .map(id => id.trim())
+              .filter(id => id.length > 0);
+
+            this.userForm.permissions.resourceConstraints.clientIds = this.clientIdsInput
+              .split(',')
+              .map(id => id.trim())
+              .filter(id => id.length > 0);
+
+            this.userForm.permissions.resourceConstraints.userIds = this.userIdsInput
+              .split(',')
+              .map(id => id.trim())
+              .filter(id => id.length > 0);
+
+            const url = this.editingUser 
+              ? `/users/api/${this.editingUser._id}`
+              : '/users/api';
+            const method = this.editingUser ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+              method,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.userForm)
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to save user');
+            }
+
+            showNotification(data.message || 'User saved successfully');
+            this.closeForm();
+            await this.loadUsers();
+          } catch (error) {
+            showNotification(error.message, 'error');
+          }
+        },
+
+        async deleteUser(id) {
+          if (!confirm('Are you sure you want to delete this user?')) return;
+
+          try {
+            const response = await fetch(`/users/api/${id}`, { method: 'DELETE' });
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to delete user');
+            }
+
+            showNotification(data.message || 'User deleted successfully');
+            await this.loadUsers();
+          } catch (error) {
+            showNotification(error.message, 'error');
+          }
+        },
+
+        closeForm() {
+          this.showUserForm = false;
+          this.editingUser = null;
+        },
+
+        applyTemplate(template) {
+          const templates = {
+            full_admin: {
+              organizations: 'all',
+              organizationIds: [],
+              features: {
+                globalSettings: { read: true, write: true },
+                clientSettings: { read: true, write: true },
+                userSettings: { read: true, write: true },
+                dynamicSettings: { read: true, write: true },
+                dynamicAuth: { read: true, write: true },
+                organizations: { read: true, write: true }
+              },
+              resourceConstraints: { clientIds: [], userIds: [], userIdPatterns: [] }
+            },
+            org_admin: {
+              organizations: 'specific',
+              organizationIds: [],
+              features: {
+                globalSettings: { read: true, write: true },
+                clientSettings: { read: true, write: true },
+                userSettings: { read: true, write: true },
+                dynamicSettings: { read: true, write: true },
+                dynamicAuth: { read: false, write: false },
+                organizations: { read: true, write: false }
+              },
+              resourceConstraints: { clientIds: [], userIds: [], userIdPatterns: [] }
+            },
+            support_agent: {
+              organizations: 'specific',
+              organizationIds: [],
+              features: {
+                globalSettings: { read: true, write: true },
+                clientSettings: { read: true, write: true },
+                userSettings: { read: true, write: true },
+                dynamicSettings: { read: true, write: true },
+                dynamicAuth: { read: true, write: false },
+                organizations: { read: true, write: false }
+              },
+              resourceConstraints: { clientIds: [], userIds: [], userIdPatterns: [] }
+            },
+            readonly: {
+              organizations: 'specific',
+              organizationIds: [],
+              features: {
+                globalSettings: { read: true, write: false },
+                clientSettings: { read: true, write: false },
+                userSettings: { read: true, write: false },
+                dynamicSettings: { read: true, write: false },
+                dynamicAuth: { read: false, write: false },
+                organizations: { read: true, write: false }
+              },
+              resourceConstraints: { clientIds: [], userIds: [], userIdPatterns: [] }
+            }
+          };
+
+          if (templates[template]) {
+            this.userForm.permissions = JSON.parse(JSON.stringify(templates[template]));
+          }
+        },
+
+        addPattern() {
+          this.userForm.permissions.resourceConstraints.userIdPatterns.push({
+            pattern: '',
+            matchType: 'prefix'
+          });
+        },
+
+        removePattern(index) {
+          this.userForm.permissions.resourceConstraints.userIdPatterns.splice(index, 1);
+        },
+
+        getRoleBadgeClass(role) {
+          const classes = {
+            admin: 'bg-red-100 text-red-800',
+            support: 'bg-blue-100 text-blue-800',
+            support_limited: 'bg-yellow-100 text-yellow-800',
+            support_readonly: 'bg-gray-100 text-gray-800'
+          };
+          return classes[role] || 'bg-gray-100 text-gray-800';
+        },
+
+        formatDate(date) {
+          return new Date(date).toLocaleDateString();
+        },
+
+        formatFeatureName(key) {
+          return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        }
+      }
+    }).mount('#app');
+
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 px-4 sm:px-6 py-3 rounded shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white z-50 text-sm sm:text-base`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+  </script>
+</body>
+</html>

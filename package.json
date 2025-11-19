@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.2",
+    "bcrypt": "^6.0.0",
     "body-parser": "^1.20.2",
     "commander": "^14.0.2",
     "connect-mongo": "^5.1.0",

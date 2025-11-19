@@ -35,12 +35,14 @@
   <div class="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
       <h2 class="text-lg sm:text-xl font-semibold">Organizations</h2>
+      <% if (typeof userPermissions !== 'undefined' && userPermissions?.features?.organizations?.write) { %>
       <button 
         @click="showOrgForm = true; editingOrg = null"
         class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto"
       >
         + New Organization
       </button>
+      <% } %>
     </div>
 
     <div class="mb-4">
@@ -103,8 +105,12 @@
             </td>
             <td class="px-2 sm:px-6 py-3 sm:py-4 hidden sm:table-cell text-xs sm:text-sm text-gray-500">{{ new Date(org.createdAt).toLocaleDateString() }}</td>
             <td class="px-2 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
+              <% if (typeof userPermissions !== 'undefined' && userPermissions?.features?.organizations?.write) { %>
               <button @click="editOrg(org)" class="text-blue-600 hover:text-blue-900 mr-2 sm:mr-3">Edit</button>
               <button @click="deleteOrg(org._id)" class="text-red-600 hover:text-red-900">Delete</button>
+              <% } else { %>
+              <span class="text-gray-400 text-xs">Read-only</span>
+              <% } %>
             </td>
           </tr>
         </tbody>
@@ -112,8 +118,20 @@
     </div>
   </div>
 
-  <!-- Quick Access Cards - Always visible -->
+  <!-- Quick Access Cards - Permission-based visibility -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+    <% 
+    const hasAnySettingAccess = (typeof userPermissions !== 'undefined' && userPermissions && userPermissions.features) ? 
+      (userPermissions.features.globalSettings.read || 
+       userPermissions.features.clientSettings.read || 
+       userPermissions.features.userSettings.read || 
+       userPermissions.features.dynamicSettings.read) : true;
+    
+    const hasDynamicAuthAccess = (typeof userPermissions !== 'undefined' && userPermissions && userPermissions.features) ? 
+      userPermissions.features.dynamicAuth.read : true;
+    %>
+    
+    <% if (hasAnySettingAccess) { %>
     <div class="bg-white rounded-lg shadow p-4 sm:p-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
         <h2 class="text-lg sm:text-xl font-semibold">Settings</h2>
@@ -129,7 +147,9 @@
         <li>• Dynamic - Custom unique ID based</li>
       </ul>
     </div>
+    <% } %>
 
+    <% if (hasDynamicAuthAccess) { %>
     <div class="bg-white rounded-lg shadow p-4 sm:p-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
         <h2 class="text-lg sm:text-xl font-semibold">Dynamic Auth</h2>
@@ -145,6 +165,25 @@
         <li>• Testing - Built-in test interface</li>
       </ul>
     </div>
+    <% } %>
+
+    <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
+    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+        <h2 class="text-lg sm:text-xl font-semibold">User Management</h2>
+        <a href="/users" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto text-center">
+          Manage →
+        </a>
+      </div>
+      <p class="text-sm sm:text-base text-gray-600">Manage user accounts and permissions</p>
+      <ul class="mt-3 sm:mt-4 space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+        <li>• Create/edit user accounts</li>
+        <li>• Configure role-based permissions</li>
+        <li>• Manage organization access</li>
+        <li>• Set resource-level constraints</li>
+      </ul>
+    </div>
+    <% } %>
   </div>
 
   <div v-show="showOrgForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">

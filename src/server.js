@@ -9,8 +9,11 @@ const path = require("path");
 
 const connectDB = require("./utils/database");
 const logger = require("./utils/logger");
+const { sessionAuth } = require("./middleware/auth");
+const { requireFeature } = require("./middleware/permissions");
 const internalRoutes = require("./routes/internal");
 const apiRoutes = require("./routes/api");
+const userRoutes = require("./routes/users");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,15 +65,36 @@ app.get("/login", (req, res) => {
   res.render("pages/login", { error: null });
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
+  
+  const User = require('./models/User');
+  const bcrypt = require('bcrypt');
+  
+  try {
+    const user = await User.findOne({ username, active: true });
+    
+    if (user && await bcrypt.compare(password, user.password)) {
+      req.session.authenticated = true;
+      req.session.username = username;
+      req.session.userId = user._id;
+      req.session.role = user.role;
+      req.session.permissions = user.permissions;
+      user.lastLogin = new Date();
+      await user.save();
+      return res.redirect("/dashboard");
+    }
+  } catch (error) {
+    logger.error('Database login error:', error);
+  }
+  
   if (
     username === process.env.BASIC_AUTH_USER &&
     password === process.env.BASIC_AUTH_PASS
   ) {
     req.session.authenticated = true;
     req.session.username = username;
+    req.session.role = 'admin';
     return res.redirect("/dashboard");
   }
 
@@ -82,38 +106,54 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-app.get("/dashboard", (req, res) => {
-  if (!req.session.authenticated) {
-    return res.redirect("/login");
-  }
+app.get("/dashboard", sessionAuth, (req, res) => {
   res.render("pages/dashboard", {
     title: "Dashboard",
     user: req.session.username,
+    userRole: req.session.role || 'admin',
+    userPermissions: req.session.permissions || {
+      organizations: 'all',
+      features: {
+        globalSettings: { read: true, write: true },
+        clientSettings: { read: true, write: true },
+        userSettings: { read: true, write: true },
+        dynamicSettings: { read: true, write: true },
+        dynamicAuth: { read: true, write: true },
+        organizations: { read: true, write: true }
+      }
+    }
   });
 });
 
-app.get("/settings", (req, res) => {
-  if (!req.session.authenticated) {
-    return res.redirect("/login");
+app.get("/settings", sessionAuth, (req, res) => {
+  const hasAnySettingAccess = req.session.permissions?.features?.globalSettings?.read ||
+    req.session.permissions?.features?.clientSettings?.read ||
+    req.session.permissions?.features?.userSettings?.read ||
+    req.session.permissions?.features?.dynamicSettings?.read;
+  
+  if (!hasAnySettingAccess) {
+    return res.status(403).send('Access denied - You do not have permission to access settings');
   }
+  
   res.render("pages/settings/index", {
     title: "Settings Management",
     user: req.session.username,
+    userRole: req.session.role || 'admin',
+    permissions: req.session.permissions
   });
 });
 
-app.get("/dynamicauth", (req, res) => {
-  if (!req.session.authenticated) {
-    return res.redirect("/login");
-  }
+app.get("/dynamicauth", sessionAuth, requireFeature('dynamicAuth', 'read'), (req, res) => {
   res.render("pages/auth/dynamicauth", {
     title: "Dynamic Auth Management",
     user: req.session.username,
+    userRole: req.session.role || 'admin'
   });
 });
 
 app.use("/api/internal", internalRoutes);
 app.use("/api", apiRoutes);
+app.use("/users", userRoutes);
 
 logger.info("GET /api/settings/global");
 
