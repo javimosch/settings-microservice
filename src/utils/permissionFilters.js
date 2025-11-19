@@ -122,11 +122,86 @@ function buildUserIdFilter(userPermissions) {
   return orConditions.length === 1 ? orConditions[0] : { $or: orConditions };
 }
 
+function applyDynamicPermissionFilter(baseQuery, permissions, resourceType, action = 'read') {
+  const resourcePermissions = permissions?.[resourceType];
+  
+  if (!resourcePermissions) {
+    return baseQuery;
+  }
+  
+  // Handle filter-based permissions (e.g., { read: { filter: { userId: 'pizzorno_alan' } } })
+  const actionPermissions = resourcePermissions[action];
+  
+  if (actionPermissions && typeof actionPermissions === 'object' && actionPermissions.filter) {
+    return { ...baseQuery, ...actionPermissions.filter };
+  }
+  
+  // Handle boolean permissions (legacy format)
+  if (typeof actionPermissions === 'boolean') {
+    return actionPermissions ? baseQuery : null;
+  }
+  
+  return baseQuery;
+}
+
+function hasPermission(permissions, resourceType, action = 'read') {
+  const resourcePermissions = permissions?.[resourceType];
+  
+  if (!resourcePermissions) {
+    return false;
+  }
+  
+  const actionPermissions = resourcePermissions[action];
+  
+  if (typeof actionPermissions === 'boolean') {
+    return actionPermissions;
+  }
+  
+  // If it's an object with filter, permission is granted (filter will be applied separately)
+  if (actionPermissions && typeof actionPermissions === 'object' && actionPermissions.filter) {
+    return true;
+  }
+  
+  return false;
+}
+
+function checkFilteredAccess(resource, permissions, resourceType, action = 'read') {
+  const resourcePermissions = permissions?.[resourceType];
+  
+  if (!resourcePermissions) {
+    return false;
+  }
+  
+  const actionPermissions = resourcePermissions[action];
+  
+  // Handle boolean permissions
+  if (typeof actionPermissions === 'boolean') {
+    return actionPermissions;
+  }
+  
+  // Handle filter-based permissions
+  if (actionPermissions && typeof actionPermissions === 'object' && actionPermissions.filter) {
+    // Check if all filter conditions match the resource
+    const filter = actionPermissions.filter;
+    for (const [key, value] of Object.entries(filter)) {
+      if (resource[key] !== value) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  return false;
+}
+
 module.exports = {
   isOrgAllowed,
   isClientAllowed,
   isUserIdAllowed,
   buildOrgFilter,
   buildClientFilter,
-  buildUserIdFilter
+  buildUserIdFilter,
+  applyDynamicPermissionFilter,
+  hasPermission,
+  checkFilteredAccess
 };

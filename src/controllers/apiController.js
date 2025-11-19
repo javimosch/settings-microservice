@@ -9,13 +9,16 @@ exports.getSetting = async (req, res) => {
     const { settingKey } = req.params;
     const { clientId, userId } = req.query;
     const organizationId = req.organizationId;
+    const { checkFilteredAccess } = require('../utils/permissionFilters');
 
     logger.info('getSetting called', { settingKey, clientId, userId, organizationId: organizationId.toString() });
 
     if (userId) {
       const userSetting = await UserSetting.findOne({ organizationId, userId, settingKey });
       if (userSetting) {
-        return res.json({ source: 'user', value: userSetting.settingValue, setting: userSetting });
+        if (checkFilteredAccess(userSetting, req.permissions, 'userSettings', 'read')) {
+          return res.json({ source: 'user', value: userSetting.settingValue, setting: userSetting });
+        }
       }
     }
 
@@ -29,7 +32,9 @@ exports.getSetting = async (req, res) => {
     const globalSetting = await GlobalSetting.findOne({ organizationId, settingKey });
     logger.info('Global setting query result', { found: !!globalSetting, organizationId: organizationId.toString(), settingKey });
     if (globalSetting) {
-      return res.json({ source: 'global', value: globalSetting.settingValue, setting: globalSetting });
+      if (checkFilteredAccess(globalSetting, req.permissions, 'globalSettings', 'read')) {
+        return res.json({ source: 'global', value: globalSetting.settingValue, setting: globalSetting });
+      }
     }
 
     res.status(404).json({ error: 'Setting not found' });
@@ -117,10 +122,15 @@ exports.getUserSetting = async (req, res) => {
   try {
     const { userId, settingKey } = req.params;
     const organizationId = req.organizationId;
+    const { checkFilteredAccess } = require('../utils/permissionFilters');
 
     const setting = await UserSetting.findOne({ organizationId, userId, settingKey });
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
+    }
+
+    if (!checkFilteredAccess(setting, req.permissions, 'userSettings', 'read')) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
     res.json({ value: setting.settingValue, setting });
@@ -135,6 +145,7 @@ exports.getUserSettingByKey = async (req, res) => {
     const { settingKey } = req.params;
     const { userId } = req.query;
     const organizationId = req.organizationId;
+    const { checkFilteredAccess } = require('../utils/permissionFilters');
 
     if (!userId) {
       return res.status(400).json({ error: 'userId query parameter is required' });
@@ -143,6 +154,10 @@ exports.getUserSettingByKey = async (req, res) => {
     const setting = await UserSetting.findOne({ organizationId, userId, settingKey });
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
+    }
+
+    if (!checkFilteredAccess(setting, req.permissions, 'userSettings', 'read')) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
     res.json({ value: setting.settingValue, setting });
@@ -222,10 +237,18 @@ exports.listUserSettings = async (req, res) => {
   try {
     const organizationId = req.organizationId;
     const { userId } = req.query;
+    const { applyDynamicPermissionFilter } = require('../utils/permissionFilters');
+    
     const query = { organizationId };
     if (userId) query.userId = userId;
     
-    const settings = await UserSetting.find(query).sort({ createdAt: -1 });
+    const filteredQuery = applyDynamicPermissionFilter(query, req.permissions, 'userSettings', 'read');
+    
+    if (filteredQuery === null) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    
+    const settings = await UserSetting.find(filteredQuery).sort({ createdAt: -1 });
     res.json(settings);
   } catch (error) {
     logger.error('Error listing user settings:', error);
@@ -287,10 +310,15 @@ exports.getUserSettingById = async (req, res) => {
   try {
     const { id } = req.params;
     const organizationId = req.organizationId;
+    const { checkFilteredAccess } = require('../utils/permissionFilters');
     
     const setting = await UserSetting.findOne({ _id: id, organizationId });
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
+    }
+
+    if (!checkFilteredAccess(setting, req.permissions, 'userSettings', 'read')) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
     
     res.json(setting);
@@ -347,8 +375,14 @@ exports.createUserSetting = async (req, res) => {
   try {
     const { userId, settingKey, settingValue, description } = req.body;
     const organizationId = req.organizationId;
+    const { hasPermission, checkFilteredAccess } = require('../utils/permissionFilters');
 
-    if (!req.permissions?.userSettings?.write) {
+    if (!hasPermission(req.permissions, 'userSettings', 'write')) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    const mockSetting = { organizationId, userId, settingKey, settingValue, description };
+    if (!checkFilteredAccess(mockSetting, req.permissions, 'userSettings', 'write')) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
@@ -455,14 +489,19 @@ exports.updateUserSetting = async (req, res) => {
     const { id } = req.params;
     const { settingValue, description } = req.body;
     const organizationId = req.organizationId;
+    const { hasPermission, checkFilteredAccess } = require('../utils/permissionFilters');
 
-    if (!req.permissions?.userSettings?.write) {
+    if (!hasPermission(req.permissions, 'userSettings', 'write')) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
     const setting = await UserSetting.findOne({ _id: id, organizationId });
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
+    }
+
+    if (!checkFilteredAccess(setting, req.permissions, 'userSettings', 'write')) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
     if (settingValue !== undefined) setting.settingValue = settingValue;
@@ -553,16 +592,22 @@ exports.deleteUserSetting = async (req, res) => {
   try {
     const { id } = req.params;
     const organizationId = req.organizationId;
+    const { hasPermission, checkFilteredAccess } = require('../utils/permissionFilters');
 
-    if (!req.permissions?.userSettings?.write) {
+    if (!hasPermission(req.permissions, 'userSettings', 'write')) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
-    const setting = await UserSetting.findOneAndDelete({ _id: id, organizationId });
+    const setting = await UserSetting.findOne({ _id: id, organizationId });
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
 
+    if (!checkFilteredAccess(setting, req.permissions, 'userSettings', 'write')) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    await UserSetting.findOneAndDelete({ _id: id, organizationId });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting user setting:', error);
@@ -610,9 +655,15 @@ exports.getAllUserSettings = async (req, res) => {
   try {
     const { userId } = req.params;
     const organizationId = req.organizationId;
+    const { checkFilteredAccess } = require('../utils/permissionFilters');
 
     const settings = await UserSetting.find({ organizationId, userId }).sort({ createdAt: -1 });
-    res.json(settings);
+    
+    const filtered = settings.filter(setting => 
+      checkFilteredAccess(setting, req.permissions, 'userSettings', 'read')
+    );
+    
+    res.json(filtered);
   } catch (error) {
     logger.error('Error getting all user settings:', error);
     res.status(500).json({ error: 'Failed to get user settings' });

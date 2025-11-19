@@ -44,6 +44,31 @@ const executeHttpAuth = async (authConfig, req) => {
 };
 
 const executeJsAuth = async (authConfig, req) => {
+  // Pure base64 decoder that works in VM2
+  const atob = (str) => {
+    return Buffer.from(str, 'base64').toString('binary');
+  };
+
+  const decodeJWT = (jwt) => {
+    if (!jwt) return null;
+    try {
+      const parts = jwt.split('.');
+      if (parts.length !== 3) return null;
+      const decoded = atob(parts[1]);
+      return JSON.parse(decoded);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const getClientUserIfValid = (token) => {
+    const now = Math.floor(Date.now() / 1000);
+    if (!token || typeof token.exp !== 'number' || now >= token.exp) {
+      return null;
+    }
+    return `${token.client}_${token.user}`;
+  };
+
   const vm = new VM({
     timeout: 5000,
     sandbox: {
@@ -54,7 +79,10 @@ const executeJsAuth = async (authConfig, req) => {
         ip: req.ip,
         path: req.path
       },
-      axios: axios
+      axios: axios,
+      atob,
+      decodeJWT,
+      getClientUserIfValid
     }
   });
 
