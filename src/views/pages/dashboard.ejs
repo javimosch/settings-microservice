@@ -9,61 +9,61 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
   <nav class="bg-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex justify-between h-16">
+    <div class="max-w-7xl mx-auto px-2 sm:px-4">
+      <div class="flex justify-between h-14 sm:h-16">
         <div class="flex items-center">
-          <a href="/dashboard" class="text-xl font-bold text-gray-800">Settings Microservice</a>
+          <a href="/dashboard" class="text-base sm:text-xl font-bold text-gray-800">Settings Microservice</a>
         </div>
-        <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2 sm:space-x-4">
           <% if (typeof user !== 'undefined' && user) { %>
-            <span class="text-gray-600">Welcome, <%= user %></span>
-            <a href="/logout" class="text-red-600 hover:text-red-800">Logout</a>
+            <span class="text-gray-600 text-xs sm:text-base hidden sm:inline">Welcome, <%= user %></span>
+            <a href="/logout" class="text-red-600 hover:text-red-800 text-sm sm:text-base">Logout</a>
           <% } %>
         </div>
       </div>
     </div>
   </nav>
 
-  <div class="max-w-7xl mx-auto py-6 px-4" id="app">
+  <div class="max-w-7xl mx-auto py-4 sm:py-6 px-2 sm:px-4" id="app">
     
 <div>
-  <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-    <p class="text-gray-600 mt-2">Manage organizations and settings</p>
+  <div class="mb-4 sm:mb-6">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+    <p class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage organizations and settings</p>
   </div>
 
-  <div class="bg-white rounded-lg shadow p-6 mb-6">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-semibold">Organizations</h2>
+  <div class="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
+      <h2 class="text-lg sm:text-xl font-semibold">Organizations</h2>
       <button 
         @click="showOrgForm = true; editingOrg = null"
-        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto"
       >
         + New Organization
       </button>
     </div>
 
     <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-2">Select Organization:</label>
+      <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Select Organization:</label>
       <select 
         v-model="selectedOrgId"
         @change="loadSettings()"
-        class="w-full border border-gray-300 rounded px-3 py-2"
+        class="w-full border border-gray-300 rounded px-2 sm:px-3 py-2 text-sm sm:text-base"
       >
         <option value="">-- Select Organization --</option>
         <option v-for="org in organizations" :key="org._id" :value="org._id">{{ org.name }}</option>
       </select>
       
       <!-- Show selected org ID -->
-      <div v-if="selectedOrgId" class="mt-2 p-3 bg-blue-50 rounded border border-blue-200">
-        <div class="flex items-center justify-between">
-          <div>
+      <div v-if="selectedOrgId" class="mt-2 p-2 sm:p-3 bg-blue-50 rounded border border-blue-200">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div class="break-all">
             <span class="text-xs font-medium text-blue-800">Organization ID:</span>
-            <code class="ml-2 bg-white px-2 py-1 rounded text-sm text-blue-600 font-mono">{{ selectedOrgId }}</code>
+            <code class="ml-1 sm:ml-2 bg-white px-1 sm:px-2 py-1 rounded text-xs sm:text-sm text-blue-600 font-mono">{{ selectedOrgId }}</code>
           </div>
           <button 
             @click="copyToClipboard(selectedOrgId)" 
-            class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+            class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 rounded whitespace-nowrap"
             title="Copy to clipboard"
           >
             📋 Copy
@@ -72,46 +72,57 @@
       </div>
     </div>
 
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organization ID</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        <tr v-for="org in organizations" :key="org._id">
-          <td class="px-6 py-4 whitespace-nowrap font-medium">{{ org.name }}</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <code class="bg-gray-100 px-2 py-1 rounded text-xs text-blue-600 cursor-pointer" 
-                  @click="copyToClipboard(org._id)" 
-                  :title="'Click to copy: ' + org._id">
-              {{ org._id }}
-            </code>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ new Date(org.createdAt).toLocaleDateString() }}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm">
-            <button @click="editOrg(org)" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-            <button @click="deleteOrg(org._id)" class="text-red-600 hover:text-red-900">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="overflow-x-auto -mx-3 sm:mx-0">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+            <th class="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Organization ID</th>
+            <th class="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Created</th>
+            <th class="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="org in organizations" :key="org._id">
+            <td class="px-2 sm:px-6 py-3 sm:py-4 font-medium text-sm sm:text-base">
+              <div>{{ org.name }}</div>
+              <div class="md:hidden mt-1">
+                <code class="bg-gray-100 px-1 py-0.5 rounded text-xs text-blue-600 cursor-pointer break-all" 
+                      @click="copyToClipboard(org._id)" 
+                      :title="'Click to copy: ' + org._id">
+                  {{ org._id }}
+                </code>
+              </div>
+            </td>
+            <td class="px-2 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
+              <code class="bg-gray-100 px-2 py-1 rounded text-xs text-blue-600 cursor-pointer" 
+                    @click="copyToClipboard(org._id)" 
+                    :title="'Click to copy: ' + org._id">
+                {{ org._id }}
+              </code>
+            </td>
+            <td class="px-2 sm:px-6 py-3 sm:py-4 hidden sm:table-cell text-xs sm:text-sm text-gray-500">{{ new Date(org.createdAt).toLocaleDateString() }}</td>
+            <td class="px-2 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
+              <button @click="editOrg(org)" class="text-blue-600 hover:text-blue-900 mr-2 sm:mr-3">Edit</button>
+              <button @click="deleteOrg(org._id)" class="text-red-600 hover:text-red-900">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Quick Access Cards - Always visible -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-    <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Settings</h2>
-        <a href="/settings" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+        <h2 class="text-lg sm:text-xl font-semibold">Settings</h2>
+        <a href="/settings" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto text-center">
           Manage →
         </a>
       </div>
-      <p class="text-gray-600">Manage three-tier settings and dynamic settings</p>
-      <ul class="mt-4 space-y-2 text-sm text-gray-600">
+      <p class="text-sm sm:text-base text-gray-600">Manage three-tier settings and dynamic settings</p>
+      <ul class="mt-3 sm:mt-4 space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600">
         <li>• Global - Organization-wide defaults</li>
         <li>• Client - Client-specific overrides</li>
         <li>• User - User-specific preferences</li>
@@ -119,15 +130,15 @@
       </ul>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Dynamic Auth</h2>
-        <a href="/dynamicauth" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+        <h2 class="text-lg sm:text-xl font-semibold">Dynamic Auth</h2>
+        <a href="/dynamicauth" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto text-center">
           Manage →
         </a>
       </div>
-      <p class="text-gray-600">Configure authentication middlewares for external APIs</p>
-      <ul class="mt-4 space-y-2 text-sm text-gray-600">
+      <p class="text-sm sm:text-base text-gray-600">Configure authentication middlewares for external APIs</p>
+      <ul class="mt-3 sm:mt-4 space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600">
         <li>• HTTP - Call external auth services</li>
         <li>• JavaScript - Custom validation logic</li>
         <li>• Caching - Configurable TTL</li>
@@ -136,30 +147,30 @@
     </div>
   </div>
 
-  <div v-show="showOrgForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white rounded-lg p-8 max-w-md w-full">
-      <h3 class="text-xl font-bold mb-4">{{ editingOrg ? 'Edit Organization' : 'New Organization' }}</h3>
+  <div v-show="showOrgForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg p-4 sm:p-8 max-w-md w-full">
+      <h3 class="text-lg sm:text-xl font-bold mb-4">{{ editingOrg ? 'Edit Organization' : 'New Organization' }}</h3>
       <form @submit.prevent="saveOrg()">
         <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+          <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Name</label>
           <input 
             v-model="orgForm.name"
             type="text" 
             required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
           />
         </div>
-        <div class="flex justify-end space-x-3">
+        <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0 sm:space-x-3">
           <button 
             type="button"
             @click="showOrgForm = false"
-            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded text-sm sm:text-base order-2 sm:order-1"
           >
             Cancel
           </button>
           <button 
             type="submit"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base order-1 sm:order-2"
           >
             Save
           </button>
@@ -186,6 +197,11 @@
       },
       mounted() {
         this.loadOrganizations();
+        // Load selected org from localStorage
+        const savedOrgId = localStorage.getItem('selectedOrgId');
+        if (savedOrgId) {
+          this.selectedOrgId = savedOrgId;
+        }
       },
       methods: {
         async loadOrganizations() {
@@ -228,7 +244,12 @@
         },
 
         loadSettings() {
-          // To be implemented in settings pages
+          // Save to localStorage whenever org is selected
+          if (this.selectedOrgId) {
+            localStorage.setItem('selectedOrgId', this.selectedOrgId);
+          } else {
+            localStorage.removeItem('selectedOrgId');
+          }
         },
 
         copyToClipboard(text) {

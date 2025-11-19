@@ -130,7 +130,7 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  logger.info(`Settings Microservice running on port ${PORT}`);
+  logger.info(`Settings Microservice running on http://localhost:${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
 

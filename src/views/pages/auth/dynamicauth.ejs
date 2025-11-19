@@ -9,45 +9,45 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
   <nav class="bg-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center space-x-4">
-          <a href="/dashboard" class="text-xl font-bold text-gray-800">Settings Microservice</a>
-          <span class="text-gray-400">/</span>
-          <span class="text-gray-600">Dynamic Auth</span>
+    <div class="max-w-7xl mx-auto px-2 sm:px-4">
+      <div class="flex justify-between h-14 sm:h-16">
+        <div class="flex items-center space-x-2 sm:space-x-4">
+          <a href="/dashboard" class="text-base sm:text-xl font-bold text-gray-800">Settings Microservice</a>
+          <span class="text-gray-400 hidden sm:inline">/</span>
+          <span class="text-gray-600 text-sm sm:text-base hidden sm:inline">Dynamic Auth</span>
         </div>
-        <div class="flex items-center space-x-4">
-          <span class="text-gray-600">Welcome, <%= user %></span>
-          <a href="/logout" class="text-red-600 hover:text-red-800">Logout</a>
+        <div class="flex items-center space-x-2 sm:space-x-4">
+          <span class="text-gray-600 text-xs sm:text-base hidden sm:inline">Welcome, <%= user %></span>
+          <a href="/logout" class="text-red-600 hover:text-red-800 text-sm sm:text-base">Logout</a>
         </div>
       </div>
     </div>
   </nav>
 
-  <div class="max-w-7xl mx-auto py-6 px-4" id="app">
+  <div class="max-w-7xl mx-auto py-4 sm:py-6 px-2 sm:px-4" id="app">
     <div>
       <!-- Organization Selector -->
-      <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Organization:</label>
+      <div class="bg-white rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Organization:</label>
         <select 
           v-model="selectedOrgId"
           @change="loadDynamicAuth()"
-          class="w-full md:w-96 border border-gray-300 rounded px-3 py-2"
+          class="w-full border border-gray-300 rounded px-2 sm:px-3 py-2 text-sm sm:text-base"
         >
           <option value="">-- Select Organization --</option>
           <option v-for="org in organizations" :key="org._id" :value="org._id">{{ org.name }}</option>
         </select>
         
         <!-- Show selected org ID -->
-        <div v-if="selectedOrgId" class="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
-          <div class="flex items-center justify-between">
-            <div>
+        <div v-if="selectedOrgId" class="mt-2 sm:mt-3 p-2 sm:p-3 bg-blue-50 rounded border border-blue-200">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div class="break-all">
               <span class="text-xs font-medium text-blue-800">Organization ID:</span>
-              <code class="ml-2 bg-white px-2 py-1 rounded text-sm text-blue-600 font-mono">{{ selectedOrgId }}</code>
+              <code class="ml-1 sm:ml-2 bg-white px-1 sm:px-2 py-1 rounded text-xs sm:text-sm text-blue-600 font-mono">{{ selectedOrgId }}</code>
             </div>
             <button 
               @click="copyToClipboard(selectedOrgId)" 
-              class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+              class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 rounded whitespace-nowrap"
               title="Copy to clipboard"
             >
               📋 Copy
@@ -57,24 +57,24 @@
       </div>
 
       <div v-if="selectedOrgId" class="bg-white rounded-lg shadow">
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-6">
+        <div class="p-3 sm:p-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
             <div>
-              <h2 class="text-2xl font-semibold">Dynamic Auth Configurations</h2>
-              <p class="text-gray-600 mt-1">Configure HTTP and JavaScript-based authentication for external APIs</p>
+              <h2 class="text-xl sm:text-2xl font-semibold">Dynamic Auth Configurations</h2>
+              <p class="text-sm sm:text-base text-gray-600 mt-1">Configure HTTP and JavaScript-based authentication for external APIs</p>
             </div>
-            <button @click="openForm()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            <button @click="openForm()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto whitespace-nowrap">
               + New Auth Config
             </button>
           </div>
 
           <!-- Auth List -->
-          <div class="space-y-4">
-            <div v-for="auth in authConfigs" :key="auth._id" class="border rounded-lg p-4 hover:shadow-md transition">
-              <div class="flex justify-between items-start">
-                <div class="flex-1">
-                  <div class="flex items-center gap-3">
-                    <h3 class="text-lg font-semibold">{{ auth.name }}</h3>
+          <div class="space-y-3 sm:space-y-4">
+            <div v-for="auth in authConfigs" :key="auth._id" class="border rounded-lg p-3 sm:p-4 hover:shadow-md transition">
+              <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
+                <div class="flex-1 w-full">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-semibold">{{ auth.name }}</h3>
                     <span :class="['px-2 py-1 rounded text-xs font-semibold', auth.type === 'http' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800']">
                       {{ auth.type.toUpperCase() }}
                     </span>
@@ -82,111 +82,111 @@
                       {{ auth.enabled ? 'ENABLED' : 'DISABLED' }}
                     </span>
                   </div>
-                  <p class="text-sm text-gray-600 mt-1">{{ auth.description || 'No description' }}</p>
+                  <p class="text-xs sm:text-sm text-gray-600 mt-1">{{ auth.description || 'No description' }}</p>
                   
                   <!-- HTTP Details -->
-                  <div v-if="auth.type === 'http'" class="mt-3 text-sm">
-                    <div class="flex items-center gap-2 text-gray-700">
+                  <div v-if="auth.type === 'http'" class="mt-2 sm:mt-3 text-xs sm:text-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-gray-700">
                       <span class="font-medium">URL:</span>
-                      <code class="bg-gray-100 px-2 py-1 rounded">{{ auth.http.url }}</code>
+                      <code class="bg-gray-100 px-1 sm:px-2 py-1 rounded break-all text-xs">{{ auth.http.url }}</code>
                     </div>
                     <div class="flex items-center gap-2 text-gray-700 mt-1">
                       <span class="font-medium">Method:</span>
-                      <code class="bg-gray-100 px-2 py-1 rounded">{{ auth.http.method || 'POST' }}</code>
+                      <code class="bg-gray-100 px-1 sm:px-2 py-1 rounded text-xs">{{ auth.http.method || 'POST' }}</code>
                     </div>
                   </div>
 
                   <!-- JS Details -->
-                  <div v-if="auth.type === 'js'" class="mt-3">
-                    <details class="text-sm">
+                  <div v-if="auth.type === 'js'" class="mt-2 sm:mt-3">
+                    <details class="text-xs sm:text-sm">
                       <summary class="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">View JavaScript Code</summary>
-                      <pre class="mt-2 bg-gray-50 p-3 rounded overflow-x-auto text-xs"><code>{{ auth.jsCode }}</code></pre>
+                      <pre class="mt-2 bg-gray-50 p-2 sm:p-3 rounded overflow-x-auto text-xs"><code>{{ auth.jsCode }}</code></pre>
                     </details>
                   </div>
 
-                  <div class="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                  <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 sm:mt-3 text-xs sm:text-sm text-gray-600">
                     <span>Cache TTL: {{ auth.cacheTTLSeconds }}s</span>
-                    <span>Updated: {{ new Date(auth.updatedAt).toLocaleString() }}</span>
+                    <span class="hidden sm:inline">Updated: {{ new Date(auth.updatedAt).toLocaleString() }}</span>
                   </div>
                 </div>
 
-                <div class="flex flex-col gap-2 ml-4">
-                  <button @click="testAuth(auth)" class="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded text-sm">
+                <div class="flex sm:flex-col gap-2 w-full sm:w-auto">
+                  <button @click="testAuth(auth)" class="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-1 rounded text-xs sm:text-sm flex-1 sm:flex-none">
                     Test
                   </button>
-                  <button @click="editAuth(auth)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
+                  <button @click="editAuth(auth)" class="bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1 rounded text-xs sm:text-sm flex-1 sm:flex-none">
                     Edit
                   </button>
-                  <button @click="invalidateCache(auth._id)" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1 rounded text-sm">
+                  <button @click="invalidateCache(auth._id)" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 sm:px-4 py-1 rounded text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap">
                     Clear Cache
                   </button>
-                  <button @click="deleteAuth(auth._id)" class="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded text-sm">
+                  <button @click="deleteAuth(auth._id)" class="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-1 rounded text-xs sm:text-sm flex-1 sm:flex-none">
                     Delete
                   </button>
                 </div>
               </div>
             </div>
 
-            <div v-if="authConfigs.length === 0" class="text-center py-12 text-gray-500">
-              <p class="text-lg">No authentication configurations yet</p>
-              <p class="text-sm mt-2">Click "New Auth Config" to create one</p>
+            <div v-if="authConfigs.length === 0" class="text-center py-8 sm:py-12 text-gray-500">
+              <p class="text-base sm:text-lg">No authentication configurations yet</p>
+              <p class="text-xs sm:text-sm mt-2">Click "New Auth Config" to create one</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Form Modal -->
-      <div v-show="showForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-        <div class="bg-white rounded-lg p-8 max-w-4xl w-full mx-4 my-8">
-          <h3 class="text-xl font-bold mb-4">{{ editingId ? 'Edit' : 'Create' }} Auth Configuration</h3>
+      <div v-show="showForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-4">
+        <div class="bg-white rounded-lg p-4 sm:p-8 max-w-4xl w-full my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg sm:text-xl font-bold mb-4">{{ editingId ? 'Edit' : 'Create' }} Auth Configuration</h3>
           <form @submit.prevent="saveAuth()">
             
             <!-- Name -->
             <div class="mb-4">
-              <label class="block text-gray-700 text-sm font-bold mb-2">Name *</label>
+              <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Name *</label>
               <input 
                 v-model="form.name"
                 type="text" 
                 required
                 placeholder="e.g., default, oauth2, api-key-auth"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
               />
               <p class="text-xs text-gray-500 mt-1">Used in X-Auth-Name header when calling external APIs</p>
             </div>
 
             <!-- Type -->
             <div class="mb-4">
-              <label class="block text-gray-700 text-sm font-bold mb-2">Type *</label>
-              <div class="flex gap-4">
+              <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Type *</label>
+              <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <label class="flex items-center">
                   <input type="radio" v-model="form.type" value="http" class="mr-2" />
-                  <span>HTTP - Call external auth service</span>
+                  <span class="text-sm sm:text-base">HTTP - Call external auth service</span>
                 </label>
                 <label class="flex items-center">
                   <input type="radio" v-model="form.type" value="js" class="mr-2" />
-                  <span>JavaScript - Custom validation code</span>
+                  <span class="text-sm sm:text-base">JavaScript - Custom validation code</span>
                 </label>
               </div>
             </div>
 
             <!-- HTTP Configuration -->
-            <div v-if="form.type === 'http'" class="mb-4 p-4 bg-blue-50 rounded">
-              <h4 class="font-semibold mb-3">HTTP Configuration</h4>
+            <div v-if="form.type === 'http'" class="mb-4 p-3 sm:p-4 bg-blue-50 rounded">
+              <h4 class="font-semibold mb-3 text-sm sm:text-base">HTTP Configuration</h4>
               
               <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">URL *</label>
+                <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">URL *</label>
                 <input 
                   v-model="form.http.url"
                   type="url" 
                   required
                   placeholder="https://auth.example.com/validate"
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
                 />
               </div>
 
               <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Method</label>
-                <select v-model="form.http.method" class="shadow border rounded w-full py-2 px-3 text-gray-700">
+                <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Method</label>
+                <select v-model="form.http.method" class="shadow border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700">
                   <option>GET</option>
                   <option>POST</option>
                   <option>PUT</option>
@@ -195,43 +195,43 @@
               </div>
 
               <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Headers (JSON)</label>
+                <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Headers (JSON)</label>
                 <textarea 
                   v-model="headersJson"
                   rows="3"
                   placeholder='{"Authorization": "{{headers.authorization}}", "X-Custom": "value"}'
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-xs sm:text-sm"
                 ></textarea>
                 <p class="text-xs text-gray-500 mt-1">Use Mustache templates: {{'{{'}}headers.authorization}}, {{'{{'}}query.token}}, {{'{{'}}body.key}}</p>
               </div>
 
               <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Query Params (JSON)</label>
+                <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Query Params (JSON)</label>
                 <textarea 
                   v-model="queryParamsJson"
                   rows="2"
                   placeholder='{"token": "{{headers.authorization}}"}'
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-xs sm:text-sm"
                 ></textarea>
               </div>
 
               <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Body Params (JSON)</label>
+                <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Body Params (JSON)</label>
                 <textarea 
                   v-model="bodyParamsJson"
                   rows="3"
                   placeholder='{"token": "{{headers.authorization}}", "scope": "read"}'
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-xs sm:text-sm"
                 ></textarea>
               </div>
             </div>
 
             <!-- JavaScript Configuration -->
-            <div v-if="form.type === 'js'" class="mb-4 p-4 bg-purple-50 rounded">
-              <h4 class="font-semibold mb-3">JavaScript Configuration</h4>
+            <div v-if="form.type === 'js'" class="mb-4 p-3 sm:p-4 bg-purple-50 rounded">
+              <h4 class="font-semibold mb-3 text-sm sm:text-base">JavaScript Configuration</h4>
               
               <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">JavaScript Code *</label>
+                <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">JavaScript Code *</label>
                 <textarea 
                   v-model="form.jsCode"
                   rows="12"
@@ -245,23 +245,23 @@ if (token === 'valid-key') {
   };
 }
 return { ok: false };"
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-xs sm:text-sm"
                 ></textarea>
                 <div class="text-xs text-gray-600 mt-2 space-y-1">
                   <p>Available variables: <code class="bg-gray-200 px-1">req</code> (headers, query, body, ip, path), <code class="bg-gray-200 px-1">axios</code></p>
-                  <p>Must return: <code class="bg-gray-200 px-1">{{ '{' }}ok: boolean, subject?: {{'{'}}id, type}, permissions?: {{'{'}}...}, ttl?: number}</code></p>
+                  <p class="break-all">Must return: <code class="bg-gray-200 px-1">{{ '{' }}ok: boolean, subject?: {{'{'}}id, type}, permissions?: {{'{'}}...}, ttl?: number}</code></p>
                 </div>
               </div>
             </div>
 
             <!-- Common fields -->
             <div class="mb-4">
-              <label class="block text-gray-700 text-sm font-bold mb-2">Cache TTL (seconds)</label>
+              <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Cache TTL (seconds)</label>
               <input 
                 v-model.number="form.cacheTTLSeconds"
                 type="number" 
                 min="0"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
               />
               <p class="text-xs text-gray-500 mt-1">How long to cache successful auth results (0 = no caching)</p>
             </div>
@@ -269,31 +269,31 @@ return { ok: false };"
             <div class="mb-4">
               <label class="flex items-center">
                 <input type="checkbox" v-model="form.enabled" class="mr-2" />
-                <span class="text-gray-700 text-sm font-bold">Enabled</span>
+                <span class="text-gray-700 text-xs sm:text-sm font-bold">Enabled</span>
               </label>
             </div>
 
             <div class="mb-4">
-              <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+              <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Description</label>
               <textarea 
                 v-model="form.description"
                 rows="2"
                 placeholder="Optional description"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
               ></textarea>
             </div>
 
-            <div class="flex justify-end space-x-3">
+            <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0 sm:space-x-3">
               <button 
                 type="button"
                 @click="closeForm()"
-                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded text-sm sm:text-base order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button 
                 type="submit"
-                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base order-1 sm:order-2"
               >
                 Save
               </button>
@@ -303,59 +303,59 @@ return { ok: false };"
       </div>
 
       <!-- Test Modal -->
-      <div v-show="showTestModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
-          <h3 class="text-xl font-bold mb-4">Test Auth: {{ testingAuth?.name }}</h3>
+      <div v-show="showTestModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-4 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg sm:text-xl font-bold mb-4">Test Auth: {{ testingAuth?.name }}</h3>
           
           <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2">Test Headers (JSON)</label>
+            <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Test Headers (JSON)</label>
             <textarea 
               v-model="testData.headers"
               rows="4"
               placeholder='{"authorization": "Bearer test-token"}'
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-xs sm:text-sm"
             ></textarea>
           </div>
 
           <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2">Test Query (JSON)</label>
+            <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Test Query (JSON)</label>
             <textarea 
               v-model="testData.query"
               rows="2"
               placeholder='{}'
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-xs sm:text-sm"
             ></textarea>
           </div>
 
           <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2">Test Body (JSON)</label>
+            <label class="block text-gray-700 text-xs sm:text-sm font-bold mb-2">Test Body (JSON)</label>
             <textarea 
               v-model="testData.body"
               rows="2"
               placeholder='{}'
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-sm"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 font-mono text-xs sm:text-sm"
             ></textarea>
           </div>
 
-          <div v-if="testResult" class="mb-4 p-4 rounded" :class="testResult.success ? 'bg-green-50' : 'bg-red-50'">
-            <h4 class="font-semibold mb-2" :class="testResult.success ? 'text-green-800' : 'text-red-800'">
+          <div v-if="testResult" class="mb-4 p-3 sm:p-4 rounded" :class="testResult.success ? 'bg-green-50' : 'bg-red-50'">
+            <h4 class="font-semibold mb-2 text-sm sm:text-base" :class="testResult.success ? 'text-green-800' : 'text-red-800'">
               {{ testResult.success ? '✓ Success' : '✗ Failed' }}
             </h4>
-            <pre class="text-sm overflow-x-auto"><code>{{ JSON.stringify(testResult.result, null, 2) }}</code></pre>
+            <pre class="text-xs sm:text-sm overflow-x-auto"><code>{{ JSON.stringify(testResult.result, null, 2) }}</code></pre>
           </div>
 
-          <div class="flex justify-end space-x-3">
+          <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0 sm:space-x-3">
             <button 
               type="button"
               @click="closeTestModal()"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded text-sm sm:text-base order-2 sm:order-1"
             >
               Close
             </button>
             <button 
               type="button"
               @click="runTest()"
-              class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base order-1 sm:order-2"
             >
               Run Test
             </button>
@@ -407,6 +407,12 @@ return { ok: false };"
       },
       mounted() {
         this.loadOrganizations();
+        // Load selected org from localStorage
+        const savedOrgId = localStorage.getItem('selectedOrgId');
+        if (savedOrgId) {
+          this.selectedOrgId = savedOrgId;
+          this.loadDynamicAuth();
+        }
       },
       methods: {
         async loadOrganizations() {
@@ -416,6 +422,8 @@ return { ok: false };"
 
         async loadDynamicAuth() {
           if (!this.selectedOrgId) return;
+          // Save to localStorage whenever org is selected
+          localStorage.setItem('selectedOrgId', this.selectedOrgId);
           const data = await fetchAPI(`/api/internal/dynamicauth?organizationId=${this.selectedOrgId}`);
           this.authConfigs = data;
         },
