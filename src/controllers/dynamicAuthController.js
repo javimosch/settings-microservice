@@ -130,11 +130,18 @@ exports.tryDynamicAuth = async (req, res) => {
     mockReq.headers['x-organization-id'] = auth.organizationId;
     mockReq.headers['x-auth-name'] = auth.name;
 
+    let captured = null;
     const mockRes = {
       status: (code) => ({
-        json: (data) => res.status(code).json({ success: false, result: data })
+        json: (data) => {
+          captured = { code, data };
+          res.status(code).json({ success: false, result: data });
+        }
       }),
-      json: (data) => res.json({ success: false, result: data })
+      json: (data) => {
+        captured = { code: 200, data };
+        res.json({ success: true, result: data, permissions: mockReq.permissions });
+      }
     };
 
     const mockNext = () => {
@@ -148,7 +155,7 @@ exports.tryDynamicAuth = async (req, res) => {
     await dynamicAuthMiddleware(mockReq, mockRes, mockNext);
   } catch (error) {
     logger.error('Error trying dynamic auth:', error);
-    res.status(500).json({ error: 'Failed to test dynamic auth', message: error.message });
+    res.status(500).json({ error: 'Failed to test dynamic auth', message: error.message, stack: error.stack });
   }
 };
 
