@@ -32,27 +32,8 @@ logger.info("Environment: " + process.env.NODE_ENV + " " + envPath);
 
 connectDB();
 
-// Trust proxy to properly detect HTTPS when behind a load balancer
-// Default: 1 (trusts immediate proxy, works for single proxy)
-// For multiple proxies (HAProxy->Traefik), set TRUST_PROXY=true or specific IPs
-const trustProxy =
-  process.env.TRUST_PROXY !== undefined
-    ? process.env.TRUST_PROXY === "true"
-      ? true
-      : process.env.TRUST_PROXY.split(",")
-    : 1;
-app.set("trust proxy", trustProxy);
-
-// Middleware to normalize headers from various proxy sources
-app.use((req, res, next) => {
-  // Normalize Authorization header case variations from proxies
-  if (req.headers["x-authorization"] && !req.headers.authorization) {
-    req.headers.authorization = req.headers["x-authorization"];
-  }
-  if (req.headers["proxy-authorization"] && !req.headers.authorization) {
-    req.headers.authorization = req.headers["proxy-authorization"];
-  }
-  next();
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
 // Helmet removed to avoid CSP issues with Alpine.js/Vue and CDN resources
@@ -70,7 +51,9 @@ app.use(
       touchAfter: 24 * 3600,
     }),
     cookie: {
-      secure: process.env.COOKIE_SECURE !== 'false' && process.env.NODE_ENV === "production",
+      secure:
+        process.env.COOKIE_SECURE !== "false" &&
+        process.env.NODE_ENV === "production",
       httpOnly: true,
       sameSite: process.env.COOKIE_SAME_SITE || "lax",
       maxAge: 1000 * 60 * 60 * 24,
