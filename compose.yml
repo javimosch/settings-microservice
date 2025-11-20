@@ -4,8 +4,6 @@ services:
   app:
     container_name: supersettings
     image: javimosch/supersettings:latest
-    environment:
-      - NODE_ENV=production
     working_dir: /app
     expose:
       - "3006"
