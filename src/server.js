@@ -21,7 +21,20 @@ const PORT = process.env.PORT || 3000;
 connectDB();
 
 // Trust proxy to properly detect HTTPS when behind a load balancer
-app.set('trust proxy', 1);
+// Use array to trust multiple proxy levels (HAProxy + Traefik)
+app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
+
+// Middleware to normalize headers from various proxy sources
+app.use((req, res, next) => {
+  // Normalize Authorization header case variations from proxies
+  if (req.headers['x-authorization'] && !req.headers.authorization) {
+    req.headers.authorization = req.headers['x-authorization'];
+  }
+  if (req.headers['proxy-authorization'] && !req.headers.authorization) {
+    req.headers.authorization = req.headers['proxy-authorization'];
+  }
+  next();
+});
 
 // Helmet removed to avoid CSP issues with Alpine.js/Vue and CDN resources
 app.use(cors());
@@ -40,7 +53,7 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: process.env.COOKIE_SAME_SITE || 'lax',
       maxAge: 1000 * 60 * 60 * 24,
     },
   }),
