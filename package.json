@@ -1,13 +1,13 @@
 {
   "name": "settings-microservice",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Multi-tenant settings microservice with dynamic auth",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "npx nodemon src/server.js",
     "cli": "node cli.js",
-    "build":"docker build -t javimosch/supersettings:latest . && docker push javimosch/supersettings:latest"
+    "build": "docker build -t javimosch/supersettings:latest . && docker push javimosch/supersettings:latest"
   },
   "keywords": [
     "settings",

@@ -32,19 +32,23 @@ logger.info("Environment: " + process.env.NODE_ENV + " " + envPath);
 
 connectDB();
 
+app.get("/version", (req, res) => {
+  res.status(200).json({ version: require("./package.json").version });
+});
+
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
 // Helmet removed to avoid CSP issues with Alpine.js/Vue and CDN resources
-app.use(cors());
+app.use(cors(process.env.CORS_ORIGIN || "*"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
-    resave: true,
+    resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
