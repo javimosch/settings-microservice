@@ -20,6 +20,9 @@ const PORT = process.env.PORT || 3000;
 
 connectDB();
 
+// Trust proxy to properly detect HTTPS when behind a load balancer
+app.set('trust proxy', 1);
+
 // Helmet removed to avoid CSP issues with Alpine.js/Vue and CDN resources
 app.use(cors());
 app.use(bodyParser.json());
@@ -37,6 +40,7 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
+      sameSite: 'lax',
       maxAge: 1000 * 60 * 60 * 24,
     },
   }),
