@@ -32,8 +32,12 @@ logger.info("Environment: " + process.env.NODE_ENV + " " + envPath);
 
 connectDB();
 
+if (process.env.TRUST_PROXY === "true") {
+  app.set("trust proxy", process.env.TRUST_PROXY_VALUE ?? 1);
+}
+
 app.get("/version", (req, res) => {
-  res.status(200).json({ version: require("./package.json").version });
+  res.status(200).json({ version: require("../package.json").version });
 });
 
 app.get("/health", (req, res) => {
