@@ -33,18 +33,15 @@ logger.info("Environment: " + process.env.NODE_ENV + " " + envPath);
 connectDB();
 
 // Trust proxy to properly detect HTTPS when behind a load balancer
-// Can be configured via TRUST_PROXY env var. Default works for single proxy.
-// For multiple proxies (HAProxy->Traefik), set TRUST_PROXY to true or specific IPs
+// Default: 1 (trusts immediate proxy, works for single proxy)
+// For multiple proxies (HAProxy->Traefik), set TRUST_PROXY=true or specific IPs
 const trustProxy =
   process.env.TRUST_PROXY !== undefined
     ? process.env.TRUST_PROXY === "true"
       ? true
       : process.env.TRUST_PROXY.split(",")
     : 1;
-if (process.env.TRUST_PROXY !== undefined) {
-  app.set("trust proxy", trustProxy);
-}
-/*
+app.set("trust proxy", trustProxy);
 
 // Middleware to normalize headers from various proxy sources
 app.use((req, res, next) => {
@@ -57,7 +54,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-*/
 
 // Helmet removed to avoid CSP issues with Alpine.js/Vue and CDN resources
 app.use(cors());
@@ -74,7 +70,7 @@ app.use(
       touchAfter: 24 * 3600,
     }),
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.COOKIE_SECURE !== 'false' && process.env.NODE_ENV === "production",
       httpOnly: true,
       sameSite: process.env.COOKIE_SAME_SITE || "lax",
       maxAge: 1000 * 60 * 60 * 24,
