@@ -1,0 +1,15 @@
+http:
+  routers:
+    settings_microservice:
+      entryPoints:
+        - https
+      service: settings_microservice
+      rule: Host(`settings.coolify.intrane.fr`)
+      tls:
+        certresolver: letsencrypt
+  services:
+    settings_microservice:
+      loadBalancer:
+        servers:
+          -
+            url: 'http://supersettings:3006'
