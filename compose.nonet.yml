@@ -12,7 +12,4 @@ services:
     env_file:
       - ./.env
     command: ["node", "src/server.js"]
-    volumes:
-      - ./:/app
-      - /app/node_modules
     restart: always

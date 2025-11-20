@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.env.example
+README.md
+docs
+examples
+scripts
+test*.sh
+*.log
+.DS_Store
+.manage-proxy-file.yml
+COMMIT*.txt
