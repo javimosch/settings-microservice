@@ -151,6 +151,19 @@ app.get("/dynamicauth", sessionAuth, requireFeature('dynamicAuth', 'read'), (req
   });
 });
 
+app.get("/integration", sessionAuth, (req, res) => {
+  if (req.session.role !== 'admin') {
+    return res.status(403).send('Access denied - Admins only');
+  }
+
+  res.render("pages/integration", {
+    title: "Integration cURL Builder",
+    user: req.session.username,
+    userRole: req.session.role || 'admin',
+    userPermissions: req.session.permissions
+  });
+});
+
 app.use("/api/internal", internalRoutes);
 app.use("/api", apiRoutes);
 app.use("/users", userRoutes);

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Integration cURL Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <%- include('../partials/nav', { user: user, userRole: userRole, userPermissions: userPermissions }) %>
+
+  <div class="max-w-7xl mx-auto py-4 sm:py-6 px-2 sm:px-4" id="app">
+    <div>
+      <div class="mb-4 sm:mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Integration cURL Builder</h1>
+        <p class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
+          Generate example cURL commands for the external Settings APIs.
+        </p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Base URL</label>
+            <input
+              v-model="baseUrl"
+              type="text"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
+              placeholder="https://settings.example.com"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Typically your service URL (without the <code>/api</code> suffix), for example <code>https://settings.your-app.com</code>.
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">HTTP Method & Endpoint Preview</label>
+            <div class="border border-gray-200 rounded px-2 sm:px-3 py-2 bg-gray-50 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
+              <span v-if="currentOperation" class="inline-flex items-center px-2 py-1 rounded text-[11px] sm:text-xs font-semibold"
+                :class="currentOperation.method === 'GET' ? 'bg-green-100 text-green-800' : (currentOperation.method === 'POST' ? 'bg-blue-100 text-blue-800' : (currentOperation.method === 'PUT' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'))">
+                {{ currentOperation.method }}
+              </span>
+              <code class="break-all text-gray-800">{{ previewPath || '/api/...' }}</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Feature</label>
+            <select
+              v-model="selectedFeature"
+              @change="onFeatureChange"
+              class="shadow border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
+            >
+              <option v-for="(featureConfig, key) in features" :key="key" :value="key">
+                {{ featureConfig.label }}
+              </option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1" v-if="currentFeature">
+              {{ currentFeature.description }}
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Operation</label>
+            <select
+              v-model="selectedOperationId"
+              @change="onOperationChange"
+              class="shadow border rounded w-full py-2 px-3 text-sm sm:text-base text-gray-700"
+            >
+              <option
+                v-for="op in currentFeature.operations"
+                :key="op.id"
+                :value="op.id"
+              >
+                {{ op.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div v-if="currentOperation">
+          <h2 class="text-base sm:text-lg font-semibold mb-2">Parameters</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div v-if="currentOperation.pathParams && currentOperation.pathParams.length">
+              <h3 class="text-xs sm:text-sm font-medium text-gray-700 mb-1">Path parameters</h3>
+              <div
+                v-for="param in currentOperation.pathParams"
+                :key="'path-' + param.name"
+                class="mb-2"
+              >
+                <label class="block text-[11px] sm:text-xs font-medium text-gray-700 mb-1">
+                  {{ param.label }}
+                  <span v-if="param.required" class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.pathParams[param.name]"
+                  type="text"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-xs sm:text-sm text-gray-700"
+                  :placeholder="param.placeholder || ''"
+                />
+              </div>
+            </div>
+
+            <div v-if="currentOperation.queryParams && currentOperation.queryParams.length">
+              <h3 class="text-xs sm:text-sm font-medium text-gray-700 mb-1">Query parameters</h3>
+              <div
+                v-for="param in currentOperation.queryParams"
+                :key="'query-' + param.name"
+                class="mb-2"
+              >
+                <label class="block text-[11px] sm:text-xs font-medium text-gray-700 mb-1">
+                  {{ param.label }}
+                  <span v-if="param.required" class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.queryParams[param.name]"
+                  type="text"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-xs sm:text-sm text-gray-700"
+                  :placeholder="param.placeholder || ''"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentOperation && currentOperation.bodyFields && currentOperation.bodyFields.length">
+          <h2 class="text-base sm:text-lg font-semibold mb-2">Body fields</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div
+              v-for="field in currentOperation.bodyFields"
+              :key="'body-' + field.name"
+            >
+              <label class="block text-[11px] sm:text-xs font-medium text-gray-700 mb-1">
+                {{ field.label }}
+                <span v-if="field.required" class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="form.bodyFields[field.name]"
+                type="text"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-xs sm:text-sm text-gray-700"
+                :placeholder="field.placeholder || ''"
+              />
+              <p v-if="field.help" class="text-[10px] text-gray-500 mt-1">{{ field.help }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-base sm:text-lg font-semibold mb-2">Headers</h2>
+          <p class="text-xs text-gray-500 mb-2">
+            Adjust headers as needed for your environment (Dynamic Auth config, tokens, etc.).
+          </p>
+          <div class="space-y-2">
+            <div
+              v-for="(header, index) in headers"
+              :key="header.id"
+              class="grid grid-cols-5 gap-2 items-center"
+            >
+              <input
+                v-model="header.name"
+                type="text"
+                class="shadow appearance-none border rounded py-2 px-2 text-[11px] sm:text-xs text-gray-700 col-span-2"
+                placeholder="Header name"
+              />
+              <input
+                v-model="header.value"
+                type="text"
+                class="shadow appearance-none border rounded py-2 px-2 text-[11px] sm:text-xs text-gray-700 col-span-2"
+                placeholder="Header value"
+              />
+              <button
+                type="button"
+                @click="removeHeader(index)"
+                class="text-[11px] sm:text-xs text-red-600 hover:text-red-800 justify-self-end"
+                :disabled="headers.length <= 1"
+              >
+                Remove
+              </button>
+            </div>
+
+            <button
+              type="button"
+              @click="addHeader"
+              class="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
+            >
+              + Add header
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+          <button
+            type="button"
+            @click="generateCurl"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base order-1"
+          >
+            Generate cURL
+          </button>
+          <button
+            type="button"
+            @click="copyGeneratedCurl"
+            :disabled="!generatedCurl"
+            class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded text-sm sm:text-base order-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Copy cURL
+          </button>
+        </div>
+
+        <div v-if="generatedCurl" class="bg-gray-900 rounded-md p-3 sm:p-4 text-xs sm:text-sm text-green-100 font-mono overflow-x-auto">
+          <pre class="whitespace-pre-wrap"><code>{{ generatedCurl }}</code></pre>
+        </div>
+      </div>
+
+      <div class="mt-4 sm:mt-6 text-[11px] sm:text-xs text-gray-500 space-y-1">
+        <p>
+          All external requests go through Dynamic Auth middleware. Make sure the <code>X-Organization-Id</code>, <code>X-Auth-Name</code> and any auth headers match your environment.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        const features = {
+          global: {
+            label: 'Global',
+            description: 'Organization-wide default settings.',
+            operations: [
+              {
+                id: 'global_get_effective',
+                label: 'Get effective setting (cascade)',
+                method: 'GET',
+                pathTemplate: '/api/global-settings/{settingKey}',
+                pathParams: [
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'max_users' }
+                ],
+                queryParams: [
+                  { name: 'clientId', label: 'Client ID (optional)', required: false, placeholder: 'client-123' },
+                  { name: 'userId', label: 'User ID (optional)', required: false, placeholder: 'user-456' }
+                ],
+                bodyFields: []
+              },
+              {
+                id: 'global_list',
+                label: 'List all global settings',
+                method: 'GET',
+                pathTemplate: '/api/settings/global',
+                pathParams: [],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'global_get_by_id',
+                label: 'Get global setting by id',
+                method: 'GET',
+                pathTemplate: '/api/settings/global/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'global_create_or_update',
+                label: 'Create or update global setting (by key)',
+                method: 'POST',
+                pathTemplate: '/api/global-settings',
+                pathParams: [],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'max_users' },
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: '100' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'Max number of users' }
+                ]
+              },
+              {
+                id: 'global_update_by_id',
+                label: 'Update global setting by id',
+                method: 'PUT',
+                pathTemplate: '/api/settings/global/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: '100' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'Updated description' }
+                ]
+              },
+              {
+                id: 'global_delete_by_id',
+                label: 'Delete global setting by id',
+                method: 'DELETE',
+                pathTemplate: '/api/settings/global/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              }
+            ]
+          },
+          client: {
+            label: 'Client',
+            description: 'Settings scoped to a client/application.',
+            operations: [
+              {
+                id: 'client_get_by_client_and_key',
+                label: 'Get client setting (by clientId and key)',
+                method: 'GET',
+                pathTemplate: '/api/client-settings/{clientId}/{settingKey}',
+                pathParams: [
+                  { name: 'clientId', label: 'Client ID', required: true, placeholder: 'client-123' },
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'theme' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'client_get_by_key_with_query',
+                label: 'Get client setting (by key + clientId query)',
+                method: 'GET',
+                pathTemplate: '/api/client-settings/{settingKey}',
+                pathParams: [
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'theme' }
+                ],
+                queryParams: [
+                  { name: 'clientId', label: 'Client ID', required: true, placeholder: 'client-123' }
+                ],
+                bodyFields: []
+              },
+              {
+                id: 'client_list_for_client',
+                label: 'List all client settings for a clientId',
+                method: 'GET',
+                pathTemplate: '/api/client-settings/all/{clientId}',
+                pathParams: [
+                  { name: 'clientId', label: 'Client ID', required: true, placeholder: 'client-123' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'client_list',
+                label: 'List client settings (CRUD API)',
+                method: 'GET',
+                pathTemplate: '/api/settings/client',
+                pathParams: [],
+                queryParams: [
+                  { name: 'clientId', label: 'Client ID (optional filter)', required: false, placeholder: 'client-123' }
+                ],
+                bodyFields: []
+              },
+              {
+                id: 'client_create',
+                label: 'Create client setting',
+                method: 'POST',
+                pathTemplate: '/api/settings/client',
+                pathParams: [],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'clientId', label: 'Client ID', required: true, placeholder: 'client-123' },
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'theme' },
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: 'dark' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'Client theme override' }
+                ]
+              },
+              {
+                id: 'client_update_by_id',
+                label: 'Update client setting by id',
+                method: 'PUT',
+                pathTemplate: '/api/settings/client/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: 'dark' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'Updated description' }
+                ]
+              },
+              {
+                id: 'client_delete_by_id',
+                label: 'Delete client setting by id',
+                method: 'DELETE',
+                pathTemplate: '/api/settings/client/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              }
+            ]
+          },
+          user: {
+            label: 'User',
+            description: 'Settings scoped to an end user.',
+            operations: [
+              {
+                id: 'user_get_by_user_and_key',
+                label: 'Get user setting (by userId and key)',
+                method: 'GET',
+                pathTemplate: '/api/user-settings/{userId}/{settingKey}',
+                pathParams: [
+                  { name: 'userId', label: 'User ID', required: true, placeholder: 'user-456' },
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'language' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'user_get_by_key_with_query',
+                label: 'Get user setting (by key + userId query)',
+                method: 'GET',
+                pathTemplate: '/api/user-settings/{settingKey}',
+                pathParams: [
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'language' }
+                ],
+                queryParams: [
+                  { name: 'userId', label: 'User ID', required: true, placeholder: 'user-456' }
+                ],
+                bodyFields: []
+              },
+              {
+                id: 'user_list_for_user',
+                label: 'List all user settings for a userId',
+                method: 'GET',
+                pathTemplate: '/api/user-settings/all/{userId}',
+                pathParams: [
+                  { name: 'userId', label: 'User ID', required: true, placeholder: 'user-456' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'user_list',
+                label: 'List user settings (CRUD API)',
+                method: 'GET',
+                pathTemplate: '/api/settings/user',
+                pathParams: [],
+                queryParams: [
+                  { name: 'userId', label: 'User ID (optional filter)', required: false, placeholder: 'user-456' }
+                ],
+                bodyFields: []
+              },
+              {
+                id: 'user_create',
+                label: 'Create user setting',
+                method: 'POST',
+                pathTemplate: '/api/settings/user',
+                pathParams: [],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'userId', label: 'User ID', required: true, placeholder: 'user-456' },
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'language' },
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: 'en' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'User language preference' }
+                ]
+              },
+              {
+                id: 'user_update_by_id',
+                label: 'Update user setting by id',
+                method: 'PUT',
+                pathTemplate: '/api/settings/user/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: 'en' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'Updated description' }
+                ]
+              },
+              {
+                id: 'user_delete_by_id',
+                label: 'Delete user setting by id',
+                method: 'DELETE',
+                pathTemplate: '/api/settings/user/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              }
+            ]
+          },
+          dynamic: {
+            label: 'Dynamic',
+            description: 'Settings keyed by arbitrary unique IDs (e.g. feature flags).',
+            operations: [
+              {
+                id: 'dynamic_get_by_unique_and_key',
+                label: 'Get dynamic setting (by uniqueId and key)',
+                method: 'GET',
+                pathTemplate: '/api/dynamic-settings/{uniqueId}/{settingKey}',
+                pathParams: [
+                  { name: 'uniqueId', label: 'Unique ID', required: true, placeholder: 'feature-flag-1' },
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'enabled' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'dynamic_get_by_key_with_query',
+                label: 'Get dynamic setting (by key + uniqueId query)',
+                method: 'GET',
+                pathTemplate: '/api/dynamic-settings/{settingKey}',
+                pathParams: [
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'enabled' }
+                ],
+                queryParams: [
+                  { name: 'uniqueId', label: 'Unique ID', required: true, placeholder: 'feature-flag-1' }
+                ],
+                bodyFields: []
+              },
+              {
+                id: 'dynamic_list_for_unique',
+                label: 'List all dynamic settings for a uniqueId',
+                method: 'GET',
+                pathTemplate: '/api/dynamic-settings/all/{uniqueId}',
+                pathParams: [
+                  { name: 'uniqueId', label: 'Unique ID', required: true, placeholder: 'feature-flag-1' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              },
+              {
+                id: 'dynamic_list',
+                label: 'List dynamic settings (CRUD API)',
+                method: 'GET',
+                pathTemplate: '/api/settings/dynamic',
+                pathParams: [],
+                queryParams: [
+                  { name: 'uniqueId', label: 'Unique ID (optional filter)', required: false, placeholder: 'feature-flag-1' }
+                ],
+                bodyFields: []
+              },
+              {
+                id: 'dynamic_create',
+                label: 'Create dynamic setting',
+                method: 'POST',
+                pathTemplate: '/api/settings/dynamic',
+                pathParams: [],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'uniqueId', label: 'Unique ID', required: true, placeholder: 'feature-flag-1' },
+                  { name: 'settingKey', label: 'Setting key', required: true, placeholder: 'enabled' },
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: 'true' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'Feature flag description' }
+                ]
+              },
+              {
+                id: 'dynamic_update_by_id',
+                label: 'Update dynamic setting by id',
+                method: 'PUT',
+                pathTemplate: '/api/settings/dynamic/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: [
+                  { name: 'settingValue', label: 'Setting value', required: true, placeholder: 'true' },
+                  { name: 'description', label: 'Description', required: false, placeholder: 'Updated description' }
+                ]
+              },
+              {
+                id: 'dynamic_delete_by_id',
+                label: 'Delete dynamic setting by id',
+                method: 'DELETE',
+                pathTemplate: '/api/settings/dynamic/{id}',
+                pathParams: [
+                  { name: 'id', label: 'Setting ID', required: true, placeholder: 'setting-object-id' }
+                ],
+                queryParams: [],
+                bodyFields: []
+              }
+            ]
+          }
+        };
+
+        const defaultFeatureKey = 'global';
+        const defaultFeature = features[defaultFeatureKey];
+        const defaultOperationId = defaultFeature.operations[0].id;
+
+        return {
+          baseUrl: window.location.origin || 'http://localhost:3000',
+          features,
+          selectedFeature: defaultFeatureKey,
+          selectedOperationId: defaultOperationId,
+          form: {
+            pathParams: {},
+            queryParams: {},
+            bodyFields: {}
+          },
+          headers: [
+            { id: 1, name: 'X-Organization-Id', value: 'YOUR_ORG_ID' },
+            { id: 2, name: 'X-Auth-Name', value: 'default' },
+            { id: 3, name: 'Authorization', value: 'Bearer YOUR_TOKEN' }
+          ],
+          headerCounter: 4,
+          generatedCurl: ''
+        };
+      },
+      computed: {
+        currentFeature() {
+          return this.features[this.selectedFeature];
+        },
+        currentOperation() {
+          if (!this.currentFeature) return null;
+          const found = this.currentFeature.operations.find(op => op.id === this.selectedOperationId);
+          return found || this.currentFeature.operations[0] || null;
+        },
+        previewPath() {
+          if (!this.currentOperation) return '';
+          let path = this.currentOperation.pathTemplate || '';
+
+          if (this.currentOperation.pathParams) {
+            this.currentOperation.pathParams.forEach(param => {
+              const value = this.form.pathParams[param.name];
+              path = path.replace(`{${param.name}}`, value || `{${param.name}}`);
+            });
+          }
+
+          const queryParts = [];
+          if (this.currentOperation.queryParams) {
+            this.currentOperation.queryParams.forEach(param => {
+              const value = this.form.queryParams[param.name];
+              if (value) {
+                queryParts.push(`${param.name}=${value}`);
+              }
+            });
+          }
+
+          if (queryParts.length > 0) {
+            return `${path}?${queryParts.join('&')}`;
+          }
+          return path;
+        }
+      },
+      mounted() {
+        this.initializeForm();
+      },
+      methods: {
+        initializeForm() {
+          this.form = {
+            pathParams: {},
+            queryParams: {},
+            bodyFields: {}
+          };
+
+          if (!this.currentOperation) return;
+
+          if (this.currentOperation.pathParams) {
+            this.currentOperation.pathParams.forEach(param => {
+              this.form.pathParams[param.name] = param.defaultValue || '';
+            });
+          }
+
+          if (this.currentOperation.queryParams) {
+            this.currentOperation.queryParams.forEach(param => {
+              this.form.queryParams[param.name] = param.defaultValue || '';
+            });
+          }
+
+          if (this.currentOperation.bodyFields) {
+            this.currentOperation.bodyFields.forEach(field => {
+              this.form.bodyFields[field.name] = field.defaultValue || '';
+            });
+          }
+        },
+        onFeatureChange() {
+          const feature = this.features[this.selectedFeature];
+          if (feature && feature.operations.length > 0) {
+            this.selectedOperationId = feature.operations[0].id;
+          } else {
+            this.selectedOperationId = '';
+          }
+          this.initializeForm();
+          this.generatedCurl = '';
+        },
+        onOperationChange() {
+          this.initializeForm();
+          this.generatedCurl = '';
+        },
+        addHeader() {
+          this.headers.push({ id: this.headerCounter++, name: '', value: '' });
+        },
+        removeHeader(index) {
+          if (this.headers.length <= 1) return;
+          this.headers.splice(index, 1);
+        },
+        buildCurl() {
+          if (!this.currentOperation) return '';
+
+          const op = this.currentOperation;
+          const base = (this.baseUrl || '').trim() || 'http://localhost:3000';
+          const normalizedBase = base.replace(/\/+$/, '');
+
+          let path = op.pathTemplate || '';
+
+          if (op.pathParams) {
+            op.pathParams.forEach(param => {
+              const raw = (this.form.pathParams[param.name] || '').toString();
+              const replacement = raw ? encodeURIComponent(raw) : `{${param.name}}`;
+              path = path.replace(`{${param.name}}`, replacement);
+            });
+          }
+
+          const queryParts = [];
+          if (op.queryParams) {
+            op.queryParams.forEach(param => {
+              const raw = (this.form.queryParams[param.name] || '').toString();
+              if (raw) {
+                queryParts.push(`${encodeURIComponent(param.name)}=${encodeURIComponent(raw)}`);
+              }
+            });
+          }
+
+          const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+          const url = `${normalizedBase}${path}${queryString}`;
+
+          const lines = [];
+          lines.push(`curl -X ${op.method} "${url}"`);
+
+          const nonEmptyHeaders = this.headers
+            .filter(h => h.name && h.name.toString().trim() !== '')
+            .map(h => ({ name: h.name.trim(), value: (h.value || '').toString() }));
+
+          const hasContentType = nonEmptyHeaders.some(h => h.name.toLowerCase() === 'content-type');
+          const hasBodyFields = op.bodyFields && op.bodyFields.length > 0;
+
+          if (hasBodyFields && !hasContentType) {
+            nonEmptyHeaders.push({ name: 'Content-Type', value: 'application/json' });
+          }
+
+          nonEmptyHeaders.forEach(h => {
+            lines.push(`  -H "${h.name}: ${h.value}"`);
+          });
+
+          if (hasBodyFields) {
+            const body = {};
+            op.bodyFields.forEach(field => {
+              const raw = this.form.bodyFields[field.name];
+              if (raw !== undefined && raw !== null && raw !== '') {
+                body[field.name] = raw;
+              }
+            });
+
+            if (Object.keys(body).length > 0) {
+              const json = JSON.stringify(body, null, 2);
+              lines.push(`  -d '${json.replace(/'/g, "\\'")}'`);
+            }
+          }
+
+          return lines.join('\\\n');
+        },
+        generateCurl() {
+          this.generatedCurl = this.buildCurl();
+        },
+        copyGeneratedCurl() {
+          if (!this.generatedCurl) return;
+          this.copyToClipboard(this.generatedCurl);
+        },
+        copyToClipboard(text) {
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(() => {
+            this.showNotification('Copied to clipboard!');
+          }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            this.showNotification('Copied to clipboard!');
+          });
+        },
+        showNotification(message, type = 'success') {
+          const notification = document.createElement('div');
+          notification.className = `fixed top-4 right-4 px-6 py-3 rounded shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white z-50`;
+          notification.textContent = message;
+          document.body.appendChild(notification);
+          setTimeout(() => notification.remove(), 3000);
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

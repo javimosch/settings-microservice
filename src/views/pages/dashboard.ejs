@@ -170,6 +170,22 @@
     <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
     <div class="bg-white rounded-lg shadow p-4 sm:p-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+        <h2 class="text-lg sm:text-xl font-semibold">Integration</h2>
+        <a href="/integration" class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto text-center">
+          Open →
+        </a>
+      </div>
+      <p class="text-sm sm:text-base text-gray-600">Build example cURLs for external Settings APIs.</p>
+      <ul class="mt-3 sm:mt-4 space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+        <li>• Choose feature scope (global, client, user, dynamic)</li>
+        <li>• Select read/write operations</li>
+        <li>• Fill in params and headers via forms</li>
+        <li>• Generate and copy ready-to-use cURL commands</li>
+      </ul>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
         <h2 class="text-lg sm:text-xl font-semibold">User Management</h2>
         <a href="/users" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto text-center">
           Manage →
