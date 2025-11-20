@@ -41,7 +41,10 @@ const trustProxy =
       ? true
       : process.env.TRUST_PROXY.split(",")
     : 1;
-app.set("trust proxy", trustProxy);
+if (process.env.TRUST_PROXY !== undefined) {
+  app.set("trust proxy", trustProxy);
+}
+/*
 
 // Middleware to normalize headers from various proxy sources
 app.use((req, res, next) => {
@@ -54,6 +57,7 @@ app.use((req, res, next) => {
   }
   next();
 });
+*/
 
 // Helmet removed to avoid CSP issues with Alpine.js/Vue and CDN resources
 app.use(cors());
