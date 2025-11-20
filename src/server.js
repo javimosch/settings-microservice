@@ -9,7 +9,7 @@ const path = require("path");
 
 const connectDB = require("./utils/database");
 const logger = require("./utils/logger");
-const { sessionAuth } = require("./middleware/auth");
+const { sessionAuth, requireAdmin } = require("./middleware/auth");
 const { requireFeature } = require("./middleware/permissions");
 const internalRoutes = require("./routes/internal");
 const apiRoutes = require("./routes/api");
@@ -158,6 +158,15 @@ app.get("/integration", sessionAuth, (req, res) => {
 
   res.render("pages/integration", {
     title: "Integration cURL Builder",
+    user: req.session.username,
+    userRole: req.session.role || 'admin',
+    userPermissions: req.session.permissions
+  });
+});
+
+app.get("/audit", sessionAuth, requireAdmin, (req, res) => {
+  res.render("pages/audit", {
+    title: "Audit Logs",
     user: req.session.username,
     userRole: req.session.role || 'admin',
     userPermissions: req.session.permissions

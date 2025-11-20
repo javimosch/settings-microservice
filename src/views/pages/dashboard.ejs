@@ -202,6 +202,27 @@
     <% } %>
   </div>
 
+  <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
+  <div class="mt-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div class="bg-white rounded-lg shadow p-4 sm:p-6 md:col-span-2">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
+          <h2 class="text-lg sm:text-xl font-semibold">Audit Logs</h2>
+          <a href="/audit" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base w-full sm:w-auto text-center">
+            View Logs →
+          </a>
+        </div>
+        <p class="text-sm sm:text-base text-gray-600">Inspect who changed what and when across organizations, settings, Dynamic Auth, and users.</p>
+        <ul class="mt-3 sm:mt-4 space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+          <li>• Filter by entity type, action, user, and time</li>
+          <li>• See before and after values for every change</li>
+          <li>• Useful for debugging, audits, and support investigations</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
   <div v-show="showOrgForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-lg p-4 sm:p-8 max-w-md w-full">
       <h3 class="text-lg sm:text-xl font-bold mb-4">{{ editingOrg ? 'Edit Organization' : 'New Organization' }}</h3>

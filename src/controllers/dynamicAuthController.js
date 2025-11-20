@@ -1,6 +1,7 @@
 const DynamicAuth = require('../models/DynamicAuth');
 const logger = require('../utils/logger');
 const cache = require('../utils/cache');
+const { logEvent } = require('../utils/auditLogger');
 const { isOrgAllowed, buildOrgFilter } = require('../utils/permissionFilters');
 
 exports.listDynamicAuth = async (req, res) => {
@@ -46,6 +47,16 @@ exports.createDynamicAuth = async (req, res) => {
       createdBy: req.session.username || req.user?.username
     });
     await auth.save();
+    await logEvent({
+      req,
+      organizationId: auth.organizationId,
+      entityType: 'dynamicAuth',
+      entityId: auth._id.toString(),
+      action: 'create',
+      before: null,
+      after: auth.toObject(),
+      meta: { name }
+    });
     res.status(201).json(auth);
   } catch (error) {
     logger.error('Error creating dynamic auth:', error);
@@ -80,6 +91,16 @@ exports.updateDynamicAuth = async (req, res) => {
       },
       { new: true, runValidators: true }
     );
+    await logEvent({
+      req,
+      organizationId: auth.organizationId,
+      entityType: 'dynamicAuth',
+      entityId: auth._id.toString(),
+      action: 'update',
+      before: existing.toObject(),
+      after: auth.toObject(),
+      meta: { name: auth.name }
+    });
     res.json(auth);
   } catch (error) {
     logger.error('Error updating dynamic auth:', error);
@@ -102,6 +123,16 @@ exports.deleteDynamicAuth = async (req, res) => {
     }
     
     await DynamicAuth.findByIdAndDelete(id);
+    await logEvent({
+      req,
+      organizationId: auth.organizationId,
+      entityType: 'dynamicAuth',
+      entityId: auth._id.toString(),
+      action: 'delete',
+      before: auth.toObject(),
+      after: null,
+      meta: { name: auth.name }
+    });
     res.json({ message: 'Dynamic auth deleted successfully' });
   } catch (error) {
     logger.error('Error deleting dynamic auth:', error);

@@ -3,6 +3,7 @@ const ClientSetting = require('../models/ClientSetting');
 const UserSetting = require('../models/UserSetting');
 const DynamicSetting = require('../models/DynamicSetting');
 const logger = require('../utils/logger');
+const { logEvent } = require('../utils/auditLogger');
 const { 
   isOrgAllowed, 
   isClientAllowed, 
@@ -52,6 +53,16 @@ exports.createGlobalSetting = async (req, res) => {
       createdBy: req.session.username || req.user?.username
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'globalSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { settingKey }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating global setting:', error);
@@ -83,6 +94,16 @@ exports.updateGlobalSetting = async (req, res) => {
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'globalSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before: existingSetting.toObject(),
+      after: setting.toObject(),
+      meta: { settingKey: setting.settingKey }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating global setting:', error);
@@ -106,6 +127,16 @@ exports.deleteGlobalSetting = async (req, res) => {
     }
     
     await GlobalSetting.findByIdAndDelete(id);
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'globalSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before: setting.toObject(),
+      after: null,
+      meta: { settingKey: setting.settingKey }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting global setting:', error);
@@ -166,6 +197,16 @@ exports.createClientSetting = async (req, res) => {
       createdBy: req.session.username || req.user?.username
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'clientSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { clientId, settingKey }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating client setting:', error);
@@ -201,6 +242,16 @@ exports.updateClientSetting = async (req, res) => {
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'clientSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before: existingSetting.toObject(),
+      after: setting.toObject(),
+      meta: { clientId: setting.clientId, settingKey: setting.settingKey }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating client setting:', error);
@@ -227,6 +278,16 @@ exports.deleteClientSetting = async (req, res) => {
     }
     
     await ClientSetting.findByIdAndDelete(id);
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'clientSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before: setting.toObject(),
+      after: null,
+      meta: { clientId: setting.clientId, settingKey: setting.settingKey }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting client setting:', error);
@@ -285,6 +346,16 @@ exports.createUserSetting = async (req, res) => {
       createdBy: req.session.username || req.user?.username
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'userSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { userId, settingKey }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating user setting:', error);
@@ -319,6 +390,16 @@ exports.updateUserSetting = async (req, res) => {
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'userSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before: existingSetting.toObject(),
+      after: setting.toObject(),
+      meta: { userId: setting.userId, settingKey: setting.settingKey }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating user setting:', error);
@@ -345,6 +426,16 @@ exports.deleteUserSetting = async (req, res) => {
     }
     
     await UserSetting.findByIdAndDelete(id);
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'userSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before: setting.toObject(),
+      after: null,
+      meta: { userId: setting.userId, settingKey: setting.settingKey }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting user setting:', error);
@@ -393,6 +484,16 @@ exports.createDynamicSetting = async (req, res) => {
       createdBy: req.session.username || req.user?.username
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'dynamicSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { uniqueId, settingKey }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating dynamic setting:', error);
@@ -423,6 +524,16 @@ exports.updateDynamicSetting = async (req, res) => {
       { settingValue, description, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'dynamicSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before: existingSetting.toObject(),
+      after: setting.toObject(),
+      meta: { uniqueId: setting.uniqueId, settingKey: setting.settingKey }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating dynamic setting:', error);
@@ -445,6 +556,16 @@ exports.deleteDynamicSetting = async (req, res) => {
     }
     
     await DynamicSetting.findByIdAndDelete(id);
+    await logEvent({
+      req,
+      organizationId: setting.organizationId,
+      entityType: 'dynamicSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before: setting.toObject(),
+      after: null,
+      meta: { uniqueId: setting.uniqueId, settingKey: setting.settingKey }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting dynamic setting:', error);

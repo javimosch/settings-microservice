@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { sessionAuth } = require('../middleware/auth');
+const { sessionAuth, requireAdmin } = require('../middleware/auth');
 const { requireFeature } = require('../middleware/permissions');
 const orgController = require('../controllers/organizationController');
 const settingsController = require('../controllers/settingsController');
 const dynamicAuthController = require('../controllers/dynamicAuthController');
+const auditController = require('../controllers/auditController');
 
 router.use(sessionAuth);
 
@@ -39,5 +40,7 @@ router.put('/dynamicauth/:id', requireFeature('dynamicAuth', 'write'), dynamicAu
 router.delete('/dynamicauth/:id', requireFeature('dynamicAuth', 'write'), dynamicAuthController.deleteDynamicAuth);
 router.post('/dynamicauth/:id/try', requireFeature('dynamicAuth', 'read'), dynamicAuthController.tryDynamicAuth);
 router.post('/dynamicauth/:id/invalidate-cache', requireFeature('dynamicAuth', 'write'), dynamicAuthController.invalidateCache);
+
+router.get('/audit', requireAdmin, auditController.listAuditEvents);
 
 module.exports = router;

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Logs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <%- include('../partials/nav', { user: user, userRole: userRole, userPermissions: userPermissions }) %>
+
+  <div class="max-w-7xl mx-auto py-4 sm:py-6 px-2 sm:px-4" id="app">
+    <div>
+      <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Audit Logs</h1>
+          <p class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
+            View and inspect UI changes across organizations, settings, Dynamic Auth, and user management.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-4 sm:mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Entity type</label>
+            <select v-model="filters.entityType" @change="loadEvents" class="w-full border rounded px-2 py-2 text-sm sm:text-base text-gray-700">
+              <option value="">All</option>
+              <option value="organization">Organization</option>
+              <option value="globalSetting">Global Setting</option>
+              <option value="clientSetting">Client Setting</option>
+              <option value="userSetting">User Setting</option>
+              <option value="dynamicSetting">Dynamic Setting</option>
+              <option value="dynamicAuth">Dynamic Auth</option>
+              <option value="user">User</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Action</label>
+            <select v-model="filters.action" @change="loadEvents" class="w-full border rounded px-2 py-2 text-sm sm:text-base text-gray-700">
+              <option value="">All</option>
+              <option value="create">Create</option>
+              <option value="update">Update</option>
+              <option value="delete">Delete</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">User</label>
+            <input v-model="filters.user" @keyup.enter="loadEvents" type="text" class="w-full border rounded px-2 py-2 text-sm sm:text-base text-gray-700" placeholder="username" />
+          </div>
+          <div class="flex items-end">
+            <button @click="loadEvents" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base">
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="border-b border-gray-200 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800">Events</h2>
+            <span class="text-xs text-gray-500">{{ total }} total</span>
+          </div>
+          <div class="overflow-x-auto max-h-[28rem]">
+            <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">When</th>
+                  <th class="px-3 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th class="px-3 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Entity</th>
+                  <th class="px-3 sm:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="event in events" :key="event._id" :class="['cursor-pointer hover:bg-gray-50', selectedEvent && selectedEvent._id === event._id ? 'bg-blue-50' : '']" @click="selectEvent(event)">
+                  <td class="px-3 sm:px-4 py-2 whitespace-nowrap text-gray-700">
+                    {{ formatDateTime(event.createdAt) }}
+                  </td>
+                  <td class="px-3 sm:px-4 py-2 whitespace-nowrap text-gray-700">
+                    {{ event.performedBy }}
+                  </td>
+                  <td class="px-3 sm:px-4 py-2 whitespace-nowrap text-gray-700">
+                    <span class="block font-medium">{{ event.entityType }}</span>
+                    <span class="block text-[11px] text-gray-500 break-all">{{ event.entityId }}</span>
+                  </td>
+                  <td class="px-3 sm:px-4 py-2 whitespace-nowrap text-gray-700">
+                    <span :class="actionBadgeClass(event.action)" class="px-2 py-1 rounded text-[11px] font-semibold uppercase">
+                      {{ event.action }}
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="events.length === 0">
+                  <td colspan="4" class="px-3 sm:px-4 py-6 text-center text-gray-500 text-sm">No audit events yet</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-3 sm:p-5 min-h-[16rem]">
+          <div v-if="selectedEvent">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-4">
+              <div>
+                <h2 class="text-sm sm:text-base font-semibold text-gray-800">Event details</h2>
+                <p class="text-xs sm:text-sm text-gray-500">
+                  {{ formatDateTime(selectedEvent.createdAt) }} · {{ selectedEvent.performedBy }} · {{ selectedEvent.entityType }} · {{ selectedEvent.action }}
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+              <div>
+                <h3 class="text-xs sm:text-sm font-semibold text-gray-700 mb-1">Before</h3>
+                <pre class="bg-gray-900 text-green-100 rounded p-2 sm:p-3 text-[11px] sm:text-xs overflow-x-auto max-h-56"><code>{{ formatJson(selectedEvent.before) }}</code></pre>
+              </div>
+              <div>
+                <h3 class="text-xs sm:text-sm font-semibold text-gray-700 mb-1">After</h3>
+                <pre class="bg-gray-900 text-green-100 rounded p-2 sm:p-3 text-[11px] sm:text-xs overflow-x-auto max-h-56"><code>{{ formatJson(selectedEvent.after) }}</code></pre>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-xs sm:text-sm font-semibold text-gray-700 mb-1">Changed fields</h3>
+              <div v-if="diffFields.length" class="space-y-1">
+                <div v-for="field in diffFields" :key="field.path" class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-50 border border-gray-200 rounded px-2 sm:px-3 py-1.5">
+                  <div class="text-xs sm:text-sm font-mono text-gray-700 break-all">{{ field.path }}</div>
+                  <div class="mt-1 sm:mt-0 text-[11px] sm:text-xs text-gray-600 flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                    <span v-if="field.before !== undefined" class="line-through text-red-500 break-all">{{ field.before }}</span>
+                    <span v-if="field.after !== undefined" class="text-green-600 break-all">{{ field.after }}</span>
+                  </div>
+                </div>
+              </div>
+              <p v-else class="text-xs sm:text-sm text-gray-500">No field-level changes detected.</p>
+            </div>
+          </div>
+          <div v-else class="flex items-center justify-center h-full text-sm sm:text-base text-gray-500">
+            Select an event to view its details.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          events: [],
+          total: 0,
+          filters: {
+            entityType: '',
+            action: '',
+            user: ''
+          },
+          selectedEvent: null,
+          loading: false
+        };
+      },
+      computed: {
+        diffFields() {
+          if (!this.selectedEvent) return [];
+          const before = this.selectedEvent.before || {};
+          const after = this.selectedEvent.after || {};
+          const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+          const result = [];
+          keys.forEach((key) => {
+            const beforeVal = before[key];
+            const afterVal = after[key];
+            const beforeStr = beforeVal === undefined ? undefined : JSON.stringify(beforeVal);
+            const afterStr = afterVal === undefined ? undefined : JSON.stringify(afterVal);
+            if (beforeStr !== afterStr) {
+              result.push({
+                path: key,
+                before: beforeStr,
+                after: afterStr
+              });
+            }
+          });
+          return result;
+        }
+      },
+      mounted() {
+        this.loadEvents();
+      },
+      methods: {
+        async loadEvents() {
+          try {
+            this.loading = true;
+            const params = new URLSearchParams();
+            if (this.filters.entityType) params.append('entityType', this.filters.entityType);
+            if (this.filters.action) params.append('action', this.filters.action);
+            if (this.filters.user) params.append('user', this.filters.user);
+            params.append('limit', '100');
+
+            const response = await fetch(`/api/internal/audit?${params.toString()}`);
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to load audit events');
+            }
+            this.events = data.items || [];
+            this.total = data.total || 0;
+            if (this.events.length > 0) {
+              this.selectedEvent = this.events[0];
+            } else {
+              this.selectedEvent = null;
+            }
+          } catch (error) {
+            this.showNotification(error.message, 'error');
+          } finally {
+            this.loading = false;
+          }
+        },
+        selectEvent(event) {
+          this.selectedEvent = event;
+        },
+        formatDateTime(value) {
+          if (!value) return '';
+          return new Date(value).toLocaleString();
+        },
+        formatJson(obj) {
+          if (!obj) return '';
+          try {
+            return JSON.stringify(obj, null, 2);
+          } catch (e) {
+            return String(obj);
+          }
+        },
+        actionBadgeClass(action) {
+          if (action === 'create') return 'bg-green-100 text-green-800';
+          if (action === 'update') return 'bg-yellow-100 text-yellow-800';
+          if (action === 'delete') return 'bg-red-100 text-red-800';
+          return 'bg-gray-100 text-gray-800';
+        },
+        showNotification(message, type = 'success') {
+          const notification = document.createElement('div');
+          notification.className = `fixed top-4 right-4 px-4 sm:px-6 py-3 rounded shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white z-50 text-sm sm:text-base`;
+          notification.textContent = message;
+          document.body.appendChild(notification);
+          setTimeout(() => notification.remove(), 3000);
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

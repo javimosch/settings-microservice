@@ -3,6 +3,7 @@ const ClientSetting = require('../models/ClientSetting');
 const UserSetting = require('../models/UserSetting');
 const DynamicSetting = require('../models/DynamicSetting');
 const logger = require('../utils/logger');
+const { logEvent } = require('../utils/auditLogger');
 
 exports.getSetting = async (req, res) => {
   try {
@@ -56,11 +57,22 @@ exports.createOrUpdateGlobalSetting = async (req, res) => {
     const existing = await GlobalSetting.findOne({ organizationId, settingKey });
     
     if (existing) {
+      const before = existing.toObject();
       existing.settingValue = settingValue;
       if (description) existing.description = description;
       existing.updatedBy = req.authResult?.subject?.id;
       existing.updatedAt = Date.now();
       await existing.save();
+      await logEvent({
+        req,
+        organizationId,
+        entityType: 'globalSetting',
+        entityId: existing._id.toString(),
+        action: 'update',
+        before,
+        after: existing.toObject(),
+        meta: { settingKey, source: 'external-api' }
+      });
       return res.json(existing);
     }
 
@@ -72,6 +84,16 @@ exports.createOrUpdateGlobalSetting = async (req, res) => {
       createdBy: req.authResult?.subject?.id
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'globalSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { settingKey, source: 'external-api' }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating/updating global setting:', error);
@@ -364,6 +386,16 @@ exports.createClientSetting = async (req, res) => {
       createdBy: req.authResult?.subject?.id
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'clientSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { clientId, settingKey, source: 'external-api' }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating client setting:', error);
@@ -395,6 +427,16 @@ exports.createUserSetting = async (req, res) => {
       createdBy: req.authResult?.subject?.id
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'userSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { userId, settingKey, source: 'external-api' }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating user setting:', error);
@@ -420,6 +462,16 @@ exports.createDynamicSetting = async (req, res) => {
       createdBy: req.authResult?.subject?.id
     });
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'dynamicSetting',
+      entityId: setting._id.toString(),
+      action: 'create',
+      before: null,
+      after: setting.toObject(),
+      meta: { uniqueId, settingKey, source: 'external-api' }
+    });
     res.status(201).json(setting);
   } catch (error) {
     logger.error('Error creating dynamic setting:', error);
@@ -442,6 +494,7 @@ exports.updateGlobalSetting = async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    const before = setting.toObject();
 
     if (settingValue !== undefined) setting.settingValue = settingValue;
     if (description !== undefined) setting.description = description;
@@ -449,6 +502,16 @@ exports.updateGlobalSetting = async (req, res) => {
     setting.updatedAt = Date.now();
     
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'globalSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before,
+      after: setting.toObject(),
+      meta: { settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating global setting:', error);
@@ -470,6 +533,7 @@ exports.updateClientSetting = async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    const before = setting.toObject();
 
     if (settingValue !== undefined) setting.settingValue = settingValue;
     if (description !== undefined) setting.description = description;
@@ -477,6 +541,16 @@ exports.updateClientSetting = async (req, res) => {
     setting.updatedAt = Date.now();
     
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'clientSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before,
+      after: setting.toObject(),
+      meta: { clientId: setting.clientId, settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating client setting:', error);
@@ -503,6 +577,7 @@ exports.updateUserSetting = async (req, res) => {
     if (!checkFilteredAccess(setting, req.permissions, 'userSettings', 'write')) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
+    const before = setting.toObject();
 
     if (settingValue !== undefined) setting.settingValue = settingValue;
     if (description !== undefined) setting.description = description;
@@ -510,6 +585,16 @@ exports.updateUserSetting = async (req, res) => {
     setting.updatedAt = Date.now();
     
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'userSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before,
+      after: setting.toObject(),
+      meta: { userId: setting.userId, settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating user setting:', error);
@@ -531,6 +616,7 @@ exports.updateDynamicSetting = async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    const before = setting.toObject();
 
     if (settingValue !== undefined) setting.settingValue = settingValue;
     if (description !== undefined) setting.description = description;
@@ -538,6 +624,16 @@ exports.updateDynamicSetting = async (req, res) => {
     setting.updatedAt = Date.now();
     
     await setting.save();
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'dynamicSetting',
+      entityId: setting._id.toString(),
+      action: 'update',
+      before,
+      after: setting.toObject(),
+      meta: { uniqueId: setting.uniqueId, settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json(setting);
   } catch (error) {
     logger.error('Error updating dynamic setting:', error);
@@ -559,7 +655,16 @@ exports.deleteGlobalSetting = async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
-
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'globalSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before: setting.toObject(),
+      after: null,
+      meta: { settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting global setting:', error);
@@ -580,7 +685,16 @@ exports.deleteClientSetting = async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
-
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'clientSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before: setting.toObject(),
+      after: null,
+      meta: { clientId: setting.clientId, settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting client setting:', error);
@@ -606,8 +720,19 @@ exports.deleteUserSetting = async (req, res) => {
     if (!checkFilteredAccess(setting, req.permissions, 'userSettings', 'write')) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
+    const before = setting.toObject();
 
     await UserSetting.findOneAndDelete({ _id: id, organizationId });
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'userSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before,
+      after: null,
+      meta: { userId: setting.userId, settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting user setting:', error);
@@ -628,7 +753,16 @@ exports.deleteDynamicSetting = async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
-
+    await logEvent({
+      req,
+      organizationId,
+      entityType: 'dynamicSetting',
+      entityId: setting._id.toString(),
+      action: 'delete',
+      before: setting.toObject(),
+      after: null,
+      meta: { uniqueId: setting.uniqueId, settingKey: setting.settingKey, source: 'external-api' }
+    });
     res.json({ message: 'Setting deleted successfully' });
   } catch (error) {
     logger.error('Error deleting dynamic setting:', error);

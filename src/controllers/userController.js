@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const logger = require('../utils/logger');
+const { logEvent } = require('../utils/auditLogger');
 
 exports.renderUserManagement = async (req, res) => {
   try {
@@ -49,6 +50,18 @@ exports.createUser = async (req, res) => {
     
     await user.save();
     logger.info(`User created: ${username} by ${req.session.username}`);
+    const userObj = user.toObject();
+    delete userObj.password;
+    await logEvent({
+      req,
+      organizationId: null,
+      entityType: 'user',
+      entityId: user._id.toString(),
+      action: 'create',
+      before: null,
+      after: userObj,
+      meta: {}
+    });
     
     res.json({ 
       message: 'User created successfully', 
@@ -71,6 +84,10 @@ exports.updateUser = async (req, res) => {
       delete updates.password;
     }
     
+    const before = await User.findById(id).select('-password');
+    if (!before) {
+      return res.status(404).json({ error: 'User not found' });
+    }
     const user = await User.findByIdAndUpdate(id, updates, { new: true }).select('-password');
     
     if (!user) {
@@ -78,6 +95,16 @@ exports.updateUser = async (req, res) => {
     }
     
     logger.info(`User updated: ${user.username} by ${req.session.username}`);
+    await logEvent({
+      req,
+      organizationId: null,
+      entityType: 'user',
+      entityId: user._id.toString(),
+      action: 'update',
+      before: before.toObject(),
+      after: user.toObject(),
+      meta: {}
+    });
     res.json({ message: 'User updated successfully', user });
   } catch (error) {
     logger.error('Error updating user:', error);
@@ -88,13 +115,24 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findById(id).select('-password');
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    await User.findByIdAndDelete(id);
     
     logger.info(`User deleted: ${user.username} by ${req.session.username}`);
+    await logEvent({
+      req,
+      organizationId: null,
+      entityType: 'user',
+      entityId: user._id.toString(),
+      action: 'delete',
+      before: user.toObject(),
+      after: null,
+      meta: {}
+    });
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     logger.error('Error deleting user:', error);

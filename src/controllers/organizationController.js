@@ -1,5 +1,6 @@
 const Organization = require('../models/Organization');
 const logger = require('../utils/logger');
+const { logEvent } = require('../utils/auditLogger');
 
 exports.listOrganizations = async (req, res) => {
   try {
@@ -27,6 +28,16 @@ exports.createOrganization = async (req, res) => {
       createdBy: req.session.username || req.user?.username
     });
     await organization.save();
+    await logEvent({
+      req,
+      organizationId: organization._id,
+      entityType: 'organization',
+      entityId: organization._id.toString(),
+      action: 'create',
+      before: null,
+      after: organization.toObject(),
+      meta: {}
+    });
     res.status(201).json(organization);
   } catch (error) {
     logger.error('Error creating organization:', error);
@@ -50,7 +61,12 @@ exports.updateOrganization = async (req, res) => {
         return res.status(403).json({ error: 'Access denied to this organization' });
       }
     }
-    
+
+    const before = await Organization.findById(id);
+    if (!before) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+
     const organization = await Organization.findByIdAndUpdate(
       id,
       { name, updatedBy: req.session.username || req.user?.username, updatedAt: Date.now() },
@@ -59,6 +75,16 @@ exports.updateOrganization = async (req, res) => {
     if (!organization) {
       return res.status(404).json({ error: 'Organization not found' });
     }
+    await logEvent({
+      req,
+      organizationId: organization._id,
+      entityType: 'organization',
+      entityId: organization._id.toString(),
+      action: 'update',
+      before: before.toObject(),
+      after: organization.toObject(),
+      meta: {}
+    });
     res.json(organization);
   } catch (error) {
     logger.error('Error updating organization:', error);
@@ -83,6 +109,16 @@ exports.deleteOrganization = async (req, res) => {
     if (!organization) {
       return res.status(404).json({ error: 'Organization not found' });
     }
+    await logEvent({
+      req,
+      organizationId: organization._id,
+      entityType: 'organization',
+      entityId: organization._id.toString(),
+      action: 'delete',
+      before: organization.toObject(),
+      after: null,
+      meta: {}
+    });
     res.json({ message: 'Organization deleted successfully' });
   } catch (error) {
     logger.error('Error deleting organization:', error);
