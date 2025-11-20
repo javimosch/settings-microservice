@@ -134,16 +134,26 @@ const dynamicAuthMiddleware = async (req, res, next) => {
       return res.status(400).json({ error: 'X-Organization-Id header required' });
     }
 
+    // Support Authorization header from various sources
+    let authHeader = req.headers.authorization || 
+                     req.headers['x-authorization'] || 
+                     req.headers['proxy-authorization'];
+
     logger.info('DynamicAuth request', {
       authName,
       orgId,
       method: req.method,
       path: req.path,
-      hasAuthHeader: !!req.headers.authorization,
-      authHeaderPrefix: req.headers.authorization ? req.headers.authorization.split(' ')[0] : undefined
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader ? authHeader.split(' ')[0] : undefined,
+      allAuthHeaders: {
+        authorization: !!req.headers.authorization,
+        'x-authorization': !!req.headers['x-authorization'],
+        'proxy-authorization': !!req.headers['proxy-authorization']
+      }
     });
 
-    const cacheKey = `auth:${orgId}:${authName}:${req.headers.authorization || 'none'}`;
+    const cacheKey = `auth:${orgId}:${authName}:${authHeader || 'none'}`;
     const cached = cache.get(cacheKey);
 
     if (cached) {

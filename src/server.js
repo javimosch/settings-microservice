@@ -21,8 +21,12 @@ const PORT = process.env.PORT || 3000;
 connectDB();
 
 // Trust proxy to properly detect HTTPS when behind a load balancer
-// Use array to trust multiple proxy levels (HAProxy + Traefik)
-app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
+// Can be configured via TRUST_PROXY env var. Default works for single proxy.
+// For multiple proxies (HAProxy->Traefik), set TRUST_PROXY to true or specific IPs
+const trustProxy = process.env.TRUST_PROXY !== undefined 
+  ? (process.env.TRUST_PROXY === 'true' ? true : process.env.TRUST_PROXY.split(','))
+  : 1;
+app.set('trust proxy', trustProxy);
 
 // Middleware to normalize headers from various proxy sources
 app.use((req, res, next) => {
