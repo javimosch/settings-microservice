@@ -69,6 +69,34 @@ const executeJsAuth = async (authConfig, req) => {
     return `${token.client}_${token.user}`;
   };
 
+  const makeJsLogger = (level) => {
+    return (...args) => {
+      let message = 'DynamicAuth JS';
+      let meta = {};
+
+      if (typeof args[0] === 'string') {
+        message = `DynamicAuth JS: ${args[0]}`;
+        if (args[1] && typeof args[1] === 'object') {
+          meta = args[1];
+        }
+      } else if (args[0] && typeof args[0] === 'object') {
+        meta = args[0];
+      }
+
+      logger[level]({
+        message,
+        ...meta
+      });
+    };
+  };
+
+  const jsLogger = {
+    info: makeJsLogger('info'),
+    warn: makeJsLogger('warn'),
+    error: makeJsLogger('error'),
+    debug: logger.debug ? makeJsLogger('debug') : makeJsLogger('info')
+  };
+
   const vm = new VM({
     timeout: 5000,
     sandbox: {
@@ -82,7 +110,8 @@ const executeJsAuth = async (authConfig, req) => {
       axios: axios,
       atob,
       decodeJWT,
-      getClientUserIfValid
+      getClientUserIfValid,
+      logger: jsLogger
     }
   });
 
@@ -105,10 +134,25 @@ const dynamicAuthMiddleware = async (req, res, next) => {
       return res.status(400).json({ error: 'X-Organization-Id header required' });
     }
 
+    logger.info('DynamicAuth request', {
+      authName,
+      orgId,
+      method: req.method,
+      path: req.path,
+      hasAuthHeader: !!req.headers.authorization,
+      authHeaderPrefix: req.headers.authorization ? req.headers.authorization.split(' ')[0] : undefined
+    });
+
     const cacheKey = `auth:${orgId}:${authName}:${req.headers.authorization || 'none'}`;
     const cached = cache.get(cacheKey);
 
     if (cached) {
+      logger.info('DynamicAuth cache hit', {
+        authName,
+        orgId,
+        method: req.method,
+        path: req.path
+      });
       req.authResult = cached;
       req.permissions = cached.permissions || {};
       req.organizationId = new mongoose.Types.ObjectId(orgId);
@@ -122,6 +166,7 @@ const dynamicAuthMiddleware = async (req, res, next) => {
     });
 
     if (!authConfig) {
+      logger.warn('DynamicAuth config not found', { authName, orgId, method: req.method, path: req.path });
       return res.status(401).json({ error: 'Auth configuration not found' });
     }
 
@@ -133,6 +178,15 @@ const dynamicAuthMiddleware = async (req, res, next) => {
     }
 
     if (!result || !result.ok) {
+      logger.warn('DynamicAuth authentication failed', {
+        authName,
+        orgId,
+        method: req.method,
+        path: req.path,
+        type: authConfig.type,
+        resultOk: result && result.ok,
+        resultError: result && result.error
+      });
       return res.status(401).json({ error: 'Authentication failed', details: result?.error });
     }
 
@@ -142,6 +196,16 @@ const dynamicAuthMiddleware = async (req, res, next) => {
     req.authResult = result;
     req.permissions = result.permissions || {};
     req.organizationId = new mongoose.Types.ObjectId(orgId);
+
+    logger.info('DynamicAuth authentication success', {
+      authName,
+      orgId,
+      method: req.method,
+      path: req.path,
+      subject: result.subject,
+      ttlMs: ttl,
+      permissionsFeatures: Object.keys(result.permissions || {})
+    });
 
     next();
   } catch (error) {
