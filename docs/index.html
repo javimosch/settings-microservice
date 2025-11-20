@@ -97,10 +97,10 @@
 
             <div class="mt-20">
                 <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                    <!-- Feature 1 -->
+                    <!-- Feature 1: Dynamic Auth -->
                     <div class="pt-6">
                         <div class="flow-root bg-white rounded-lg px-6 pb-8 h-full border border-cristal-100 hover:shadow-lg transition-shadow">
-                            <div class="-mt-6">
+                            <div class="-mt-6 space-y-6">
                                 <div>
                                     <span class="inline-flex items-center justify-center p-3 bg-cristal-900 rounded-md shadow-lg">
                                         <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,18 +108,19 @@
                                         </svg>
                                     </span>
                                 </div>
+                                <img src="assets/dynamic_auth.png" alt="Dynamic authentication flow illustration" class="w-full h-48 rounded-lg border border-cristal-100 object-cover cursor-zoom-in" data-lightbox-src="assets/dynamic_auth.png" data-lightbox-alt="Dynamic authentication flow illustration">
                                 <h3 class="mt-8 text-lg font-medium text-cristal-900 tracking-tight">Dynamic Auth</h3>
                                 <p class="mt-5 text-base text-cristal-500">
-                                    Flexible authentication strategies including JWT and API Keys, configurable per client and organization.
+                                    Flexible authentication strategies including JWT and API keys, configurable per client and organization.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Feature 2 -->
+                    <!-- Feature 2: Multi-tenant orgs -->
                     <div class="pt-6">
                         <div class="flow-root bg-white rounded-lg px-6 pb-8 h-full border border-cristal-100 hover:shadow-lg transition-shadow">
-                            <div class="-mt-6">
+                            <div class="-mt-6 space-y-6">
                                 <div>
                                     <span class="inline-flex items-center justify-center p-3 bg-cristal-900 rounded-md shadow-lg">
                                         <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -127,6 +128,7 @@
                                         </svg>
                                     </span>
                                 </div>
+                                <img src="assets/multi_tenant.png" alt="Multi-tenant organizations illustration" class="w-full h-48 rounded-lg border border-cristal-100 object-cover cursor-zoom-in" data-lightbox-src="assets/multi_tenant.png" data-lightbox-alt="Multi-tenant organizations illustration">
                                 <h3 class="mt-8 text-lg font-medium text-cristal-900 tracking-tight">Multi-Tenant</h3>
                                 <p class="mt-5 text-base text-cristal-500">
                                     Native support for Organizations and granular permissions. Isolate settings between different environments or clients.
@@ -135,10 +137,10 @@
                         </div>
                     </div>
 
-                    <!-- Feature 3 -->
+                    <!-- Feature 3: Settings & cascade -->
                     <div class="pt-6">
                         <div class="flow-root bg-white rounded-lg px-6 pb-8 h-full border border-cristal-100 hover:shadow-lg transition-shadow">
-                            <div class="-mt-6">
+                            <div class="-mt-6 space-y-6">
                                 <div>
                                     <span class="inline-flex items-center justify-center p-3 bg-cristal-900 rounded-md shadow-lg">
                                         <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -146,12 +148,63 @@
                                         </svg>
                                     </span>
                                 </div>
+                                <img src="assets/settings.png" alt="Granular settings dashboard" class="w-full h-48 rounded-lg border border-cristal-100 object-cover cursor-zoom-in" data-lightbox-src="assets/settings.png" data-lightbox-alt="Granular settings dashboard">
                                 <h3 class="mt-8 text-lg font-medium text-cristal-900 tracking-tight">Granular Settings</h3>
                                 <p class="mt-5 text-base text-cristal-500">
-                                    Define settings at global, organization, or user levels. Type-safe and validated configurations.
+                                    Define settings at global, client, user, or dynamic levels with clear cascade resolution.
                                 </p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operational Tools -->
+    <div class="py-24 bg-white border-t border-cristal-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-base text-cristal-600 font-semibold tracking-wide uppercase">Operational tools</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-cristal-900 sm:text-4xl">
+                    Built-in tooling for integration and governance
+                </p>
+                <p class="mt-4 max-w-2xl text-xl text-cristal-500 mx-auto">
+                    Ship safely with first-class support for integrations, user management and audit trails.
+                </p>
+            </div>
+
+            <div class="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
+                <!-- Integration view -->
+                <div class="bg-cristal-50 border border-cristal-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <img src="assets/integration.png" alt="Integration cURL builder interface" class="w-full h-40 object-cover border-b border-cristal-100 cursor-zoom-in" data-lightbox-src="assets/integration.png" data-lightbox-alt="Integration cURL builder interface">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-cristal-900">Integration cURL Builder</h3>
+                        <p class="mt-3 text-sm text-cristal-500">
+                            Use the built-in integration view to compose and copy cURL commands for all external APIs, including cascade lookups and CRUD endpoints.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- User management -->
+                <div class="bg-cristal-50 border border-cristal-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <img src="assets/user_rbac.png" alt="User and role management view" class="w-full h-40 object-cover border-b border-cristal-100 cursor-zoom-in" data-lightbox-src="assets/user_rbac.png" data-lightbox-alt="User and role management view">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-cristal-900">User &amp; role management</h3>
+                        <p class="mt-3 text-sm text-cristal-500">
+                            Manage admin and support users, assign feature-level permissions and constrain which organizations and resources they can see or edit.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Audit trail -->
+                <div class="bg-cristal-50 border border-cristal-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <img src="assets/audit.jpg" alt="Audit log of configuration changes" class="w-full h-40 object-cover border-b border-cristal-100 cursor-zoom-in" data-lightbox-src="assets/audit.jpg" data-lightbox-alt="Audit log of configuration changes">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-cristal-900">Audit trail</h3>
+                        <p class="mt-3 text-sm text-cristal-500">
+                            Every change to users, settings and DynamicAuth can be recorded as an audit event to support debugging, compliance and incident response.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -394,5 +447,47 @@ X-Auth-Name: default
             </div>
         </div>
     </footer>
+    <div id="lightbox" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <button id="lightbox-close" class="absolute top-4 right-4 text-white text-2xl" aria-label="Close image">×</button>
+        <img id="lightbox-image" src="" alt="" class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl">
+    </div>
+
+    <script>
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImage = document.getElementById('lightbox-image');
+        const lightboxClose = document.getElementById('lightbox-close');
+
+        function openLightbox(src, alt) {
+            lightboxImage.src = src;
+            lightboxImage.alt = alt || '';
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+        }
+
+        function closeLightbox() {
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+            lightboxImage.src = '';
+        }
+
+        document.querySelectorAll('[data-lightbox-src]').forEach(img => {
+            img.addEventListener('click', () => {
+                openLightbox(img.dataset.lightboxSrc, img.dataset.lightboxAlt || img.alt);
+            });
+        });
+
+        lightboxClose.addEventListener('click', closeLightbox);
+        lightbox.addEventListener('click', (event) => {
+            if (event.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !lightbox.classList.contains('hidden')) {
+                closeLightbox();
+            }
+        });
+    </script>
 </body>
 </html>

@@ -11,6 +11,9 @@ A production-ready, multi-tenant settings microservice built with Node.js, Expre
 - JWT helper functions and filter-based permission enforcement
 - Internal admin UI (sessions) under `/api/internal/*`
 - External REST API (bearer token via DynamicAuth) under `/api/*`
+- Integration cURL Builder UI for external APIs
+- User & role management for internal admins and support users
+- Audit logging of settings, user and DynamicAuth changes
 - CLI tool that talks to the same external API surface
 
 ## Quickstart
@@ -55,6 +58,10 @@ To see the full workflow and verify everything is wired correctly:
   - `/api/internal/user-settings`
   - `/api/internal/dynamic-settings`
   - `/api/internal/dynamicauth` (create/test/invalidate cache)
+  - `/api/internal/audit` (list audit events)
+- `/integration` – Integration cURL Builder UI
+- `/users` – User management UI (admin-only)
+- `/users/api` – CRUD API for internal users
 
 ### External APIs (DynamicAuth)
 
